@@ -79,6 +79,7 @@ fnumber ({digit}*\.{digit}+)
 "cout"      { return COUT; }
 
 "void"      { yylval.var_type = OBJECT_TYPE_VOID; return VARIABLE_T; }
+"char"      { yylval.var_type = OBJECT_TYPE_CHAR; return VARIABLE_T; }
 "int"       { yylval.var_type = OBJECT_TYPE_INT; return VARIABLE_T; }
 "long"      { yylval.var_type = OBJECT_TYPE_LONG; return VARIABLE_T; }
 "float"     { yylval.var_type = OBJECT_TYPE_FLOAT; return VARIABLE_T; }
@@ -97,7 +98,7 @@ fnumber ({digit}*\.{digit}+)
 "false"     { yylval.b_var = false; return BOOL_LIT; }
 {inumber}   { yylval.i_var = atoi(yytext); return INT_LIT; }
 {fnumber}   { yylval.f_var = atof(yytext); return FLOAT_LIT; }
-{variable}  { yylval.s_var = strdup(yytext); return VARIABLE;}
+{variable}  { yylval.s_var = strdup(yytext); return VARIABLE; }
 
 <<EOF>>     { 
                 static int once = 0;

@@ -7,7 +7,6 @@ BUILD := ./build
 HEADER := ./compiler_common.h
 COMPILER := compiler
 EXEC := Main
-v := 0
 
 all: create_build_folder ${COMPILER} compile debug run
 
@@ -40,9 +39,6 @@ debug:
 run:
 	$(info ########## Run program ##########)
 	@java ${EXEC}
-
-judge: all
-	@judge -v ${v}
 
 clean:
 	rm -f ${BUILD}/${COMPILER} ${BUILD}/y.tab.* ${BUILD}/y.output ${BUILD}/lex.* ${EXEC}.class
