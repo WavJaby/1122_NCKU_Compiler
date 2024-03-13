@@ -27,7 +27,7 @@ int main(string argv[]) {
     yy /= 5.0;
     cout << ( yy ) << endl;
 
-    string s = ""
+    string s = "";
     cout << ( s) << endl;
     s = "Hello";
     cout << ( s) << endl;
