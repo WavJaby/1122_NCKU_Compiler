@@ -68,8 +68,6 @@ fnumber ({digit}*\.{digit}+)
 "<<="       { printToken("SHL_ASSIGN", NULL); }
 "&="        { printToken("BAN_ASSIGN", NULL); }
 "|="        { printToken("BOR_ASSIGN", NULL); }
-"~="        { printToken("BNT_ASSIGN", NULL); }
-"^="        { printToken("BXO_ASSIGN", NULL); }
 "++"        { printToken("INC_ASSIGN", NULL); }
 "--"        { printToken("DEC_ASSIGN", NULL); }
 
