@@ -35,34 +35,43 @@ fnumber ({digit}*\.{digit}+)
 <STR_CON>'          { BEGIN(INITIAL); printToken("CHAR_LIT", yytext); }
 <STR_CON>(\\'|[^'\n])* { yymore(); }
 
-">>"        { printToken("RSHIFT", NULL); }
-"<<"        { printToken("LSHIFT", NULL); }
-"&"         { printToken("'&'", NULL); }
-"|"         { printToken("'|'", NULL); }
-'~'         { printToken("'~'", NULL); }
+">>"        { printToken("SHR", NULL); }
+"<<"        { printToken("SHL", NULL); }
+"&"         { printToken("BAN", NULL); }
+"|"         { printToken("BOR", NULL); }
+'~'         { printToken("BNT", NULL); }
+'^'         { printToken("BXO", NULL); }
 
-"+"         { printToken("'+'", NULL); }
-"-"         { printToken("'-'", NULL); }
-"*"         { printToken("'*'", NULL); }
-"/"         { printToken("'/'", NULL); }
-"%"         { printToken("'%'", NULL); }
-"!"         { printToken("'!'", NULL); }
+"+"         { printToken("ADD", NULL); }
+"-"         { printToken("SUB", NULL); }
+"*"         { printToken("MUL", NULL); }
+"/"         { printToken("DIV", NULL); }
+"%"         { printToken("MOD", NULL); }
+"!"         { printToken("NOT", NULL); }
 
-">"         { printToken("'>'", NULL); }
-"<"         { printToken("'<'", NULL); }
+">"         { printToken("LES", NULL); }
+"<"         { printToken("GTR", NULL); }
 ">="        { printToken("GEQ", NULL); }
 "<="        { printToken("LEQ", NULL); }
 "=="        { printToken("EQL", NULL); }
 "!="        { printToken("NEQ", NULL); }
-"&&"        { printToken("LAND", NULL); }
+"&&"        { printToken("LAN", NULL); }
 "||"        { printToken("LOR", NULL); }
 
-"="         { printToken("ASSIGN", NULL); }
+"="         { printToken("VAL_ASSIGN", NULL); }
 "+="        { printToken("ADD_ASSIGN", NULL); }
 "-="        { printToken("SUB_ASSIGN", NULL); }
 "*="        { printToken("MUL_ASSIGN", NULL); }
 "/="        { printToken("DIV_ASSIGN", NULL); }
 "%="        { printToken("REM_ASSIGN", NULL); }
+">>="       { printToken("SHR_ASSIGN", NULL); }
+"<<="       { printToken("SHL_ASSIGN", NULL); }
+"&="        { printToken("BAN_ASSIGN", NULL); }
+"|="        { printToken("BOR_ASSIGN", NULL); }
+"~="        { printToken("BNT_ASSIGN", NULL); }
+"^="        { printToken("BXO_ASSIGN", NULL); }
+"++"        { printToken("INC_ASSIGN_", NULL); }
+"--"        { printToken("DEC_ASSIGN", NULL); }
 
 "("         { printToken("'('", NULL); }
 ")"         { printToken("')'", NULL); }
@@ -77,14 +86,14 @@ fnumber ({digit}*\.{digit}+)
 
 "cout"      { printToken("COUT", NULL); }
 
-"void"      { printToken("VOID_TYPE", NULL); }
-"char"      { printToken("CHAR_TYPE", NULL); }
-"int"       { printToken("INT_TYPE", NULL); }
-"long"      { printToken("LONG_TYPE", NULL); }
-"float"     { printToken("FLOAT_TYPE", NULL); }
-"double"    { printToken("DOUBLE_TYPE", NULL); }
-"bool"      { printToken("BOOL_TYPE", NULL); }
-"string"    { printToken("STRING_TYPE", NULL); }
+"void"      { printToken("VOID_T", NULL); }
+"char"      { printToken("CHAR_T", NULL); }
+"int"       { printToken("INT_T", NULL); }
+"long"      { printToken("LONG_T", NULL); }
+"float"     { printToken("FLOAT_T", NULL); }
+"double"    { printToken("DOUBLE_T", NULL); }
+"bool"      { printToken("BOOL_T", NULL); }
+"string"    { printToken("STR_T", NULL); }
 
 "if"        { printToken("IF", NULL); }
 "else"      { printToken("ELSE", NULL); }
@@ -111,31 +120,21 @@ int yywrap(void) {
 
 
 int main(int argc, char* argv[]) {
-    char *outputFileName = NULL, *inputFileName = NULL;
-    if (argc == 3) {
+    char *inputFileName = NULL;
+    if (argc == 2) {
         yyin = fopen(inputFileName = argv[1], "r");
-        outputFileName = argv[2];
-    } else if (argc == 2) {
-        yyin = stdin;
-        outputFileName = argv[1];
     } else {
         yyin = stdin;
-        outputFileName = "output";
     }
     if (!yyin) {
         printf("file `%s` doesn't exists or cannot be opened\n", inputFileName);
         exit(1);
     }
-    /* fout = fopen(outputFileName, "w");
-    if (!fout) {
-        printf("file `%s` cannot be opened\n", outputFileName);
-        exit(1);
-    } */
 
     yylex();
-    printf("\nFinish scanning,\ntotal line: %d\n", yylineno);
+    printf("\nTotal line: %d\n", yylineno);
+
     /* printf("comment line: %d\n", comment_num); */
     fclose(yyin);
-    /* fclose(fout); */
     return 0;
 }

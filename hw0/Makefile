@@ -1,25 +1,29 @@
-CC := gcc
 CFLAGS := -Wall -O0 -ggdb
 LEX_SRC := ./compiler.l
-BUILD := ./build
 COMPILER := compiler
-TEST := ../input
+BUILD := ./build
+BUILD_OUT := out
 
-all: create_build_folder ${COMPILER} run
+COMPILER_OUT := ${BUILD}/${BUILD_OUT}/${COMPILER}
+LEX_OUT := ${BUILD}/lex.yy.c
+
+all: create_build_folder create_compiler run
 
 create_build_folder:
 	mkdir -p ${BUILD}
+	mkdir -p ${BUILD}/${BUILD_OUT}
 
-${COMPILER}: lex.yy.c
-	$(info ########## Create compiler ##########)
-	${CC} ${CFLAGS} -o ${BUILD}/$@ -iquote ./ -iquote ../ ${BUILD}/lex.yy.c
+create_compiler: lex.yy.c
+	$(info ########## Compile Compiler ##########)
+	gcc ${CFLAGS} -iquote ./ -iquote ../ -o ${COMPILER_OUT} ${LEX_OUT}
 
-lex.yy.c: ${LEX_SRC}
-	lex -o ${BUILD}/lex.yy.c $<
+lex.yy.c:
+	$(info ########## Compile Lex ##########)
+	lex -o ${LEX_OUT} ${LEX_SRC}
 
 run:
-	$(info ########## Run program ##########)
-	@./${BUILD}/${COMPILER} ${TEST}/subtask03-precedenc/testcase01.cpp output
+	$(info ########## Run Compiler ##########)
+	@${COMPILER_OUT} output
 
 clean:
-	rm -f ${BUILD}/${COMPILER} ${BUILD}/lex.* output
+	rm -rf ${BUILD}
