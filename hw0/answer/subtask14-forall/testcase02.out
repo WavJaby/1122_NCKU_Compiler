@@ -1,14 +1,14 @@
 INT_T
-VARIABLE 	 main
+IDENT    	 main
 '('
 STR_T
-VARIABLE 	 argv
+IDENT    	 argv
 '['
 ']'
 ')'
 '{'
 INT_T
-VARIABLE 	 a
+IDENT    	 a
 '['
 INT_LIT  	 3
 ']'
@@ -19,45 +19,45 @@ INT_LIT  	 3
 FOR
 '('
 INT_T
-VARIABLE 	 i
+IDENT    	 i
 VAL_ASSIGN
 INT_LIT  	 0
 ';'
-VARIABLE 	 i
+IDENT    	 i
 GTR
 INT_LIT  	 3
 ';'
-VARIABLE 	 i
+IDENT    	 i
 INC_ASSIGN
 ')'
 '{'
 FOR
 '('
 INT_T
-VARIABLE 	 j
+IDENT    	 j
 VAL_ASSIGN
 INT_LIT  	 0
 ';'
-VARIABLE 	 j
+IDENT    	 j
 GTR
 INT_LIT  	 3
 ';'
-VARIABLE 	 j
+IDENT    	 j
 INC_ASSIGN
 ')'
 '{'
-VARIABLE 	 a
+IDENT    	 a
 '['
-VARIABLE 	 i
+IDENT    	 i
 ']'
 '['
-VARIABLE 	 j
+IDENT    	 j
 ']'
 VAL_ASSIGN
 '('
-VARIABLE 	 i
+IDENT    	 i
 ADD
-VARIABLE 	 j
+IDENT    	 j
 ADD
 INT_LIT  	 998244353
 ')'
@@ -69,44 +69,44 @@ INT_LIT  	 82781
 FOR
 '('
 INT_T
-VARIABLE 	 i
+IDENT    	 i
 VAL_ASSIGN
 INT_LIT  	 2
 ';'
-VARIABLE 	 i
+IDENT    	 i
 GEQ
 INT_LIT  	 0
 ';'
-VARIABLE 	 i
+IDENT    	 i
 DEC_ASSIGN
 ')'
 '{'
 FOR
 '('
 INT_T
-VARIABLE 	 j
+IDENT    	 j
 VAL_ASSIGN
 INT_LIT  	 0
 ';'
-VARIABLE 	 j
+IDENT    	 j
 GTR
 INT_LIT  	 3
 ';'
-VARIABLE 	 j
+IDENT    	 j
 INC_ASSIGN
 ')'
 '{'
 COUT
 SHL
-VARIABLE 	 a
+IDENT    	 a
 '['
-VARIABLE 	 i
+IDENT    	 i
 ']'
 '['
-VARIABLE 	 j
+IDENT    	 j
 ']'
 SHL
-VARIABLE 	 endl
+IDENT    	 endl
 ';'
 '}'
 '}'

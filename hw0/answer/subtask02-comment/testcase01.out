@@ -1,8 +1,8 @@
 INT_T
-VARIABLE 	 main
+IDENT    	 main
 '('
 STR_T
-VARIABLE 	 argv
+IDENT    	 argv
 '['
 ']'
 ')'
@@ -33,7 +33,7 @@ CHAR_LIT 	 'd'
 SHL
 CHAR_LIT 	 '!'
 SHL
-VARIABLE 	 endl
+IDENT    	 endl
 ';'
 COMMENT  	 // this is a single comment !
 RETURN

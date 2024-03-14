@@ -1,8 +1,8 @@
 INT_T
-VARIABLE 	 main
+IDENT    	 main
 '('
 STR_T
-VARIABLE 	 argv
+IDENT    	 argv
 '['
 ']'
 ')'
@@ -11,7 +11,7 @@ COUT
 SHL
 STRING_LIT 	 "Hello World"
 SHL
-VARIABLE 	 endl
+IDENT    	 endl
 ';'
 RETURN
 INT_LIT  	 0

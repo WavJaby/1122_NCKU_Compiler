@@ -39,8 +39,8 @@ fnumber ({digit}*\.{digit}+)
 "<<"        { printToken("SHL", NULL); }
 "&"         { printToken("BAN", NULL); }
 "|"         { printToken("BOR", NULL); }
-'~'         { printToken("BNT", NULL); }
-'^'         { printToken("BXO", NULL); }
+"~"         { printToken("BNT", NULL); }
+"^"         { printToken("BXO", NULL); }
 
 "+"         { printToken("ADD", NULL); }
 "-"         { printToken("SUB", NULL); }
@@ -70,7 +70,7 @@ fnumber ({digit}*\.{digit}+)
 "|="        { printToken("BOR_ASSIGN", NULL); }
 "~="        { printToken("BNT_ASSIGN", NULL); }
 "^="        { printToken("BXO_ASSIGN", NULL); }
-"++"        { printToken("INC_ASSIGN_", NULL); }
+"++"        { printToken("INC_ASSIGN", NULL); }
 "--"        { printToken("DEC_ASSIGN", NULL); }
 
 "("         { printToken("'('", NULL); }
@@ -86,6 +86,7 @@ fnumber ({digit}*\.{digit}+)
 
 "cout"      { printToken("COUT", NULL); }
 
+"auto"      { printToken("AUTO_T", NULL); }
 "void"      { printToken("VOID_T", NULL); }
 "char"      { printToken("CHAR_T", NULL); }
 "int"       { printToken("INT_T", NULL); }
@@ -106,7 +107,7 @@ fnumber ({digit}*\.{digit}+)
 "false"     { printToken("BOOL_LIT", yytext); }
 {inumber}   { printToken("INT_LIT", yytext); }
 {fnumber}   { printToken("FLOAT_LIT", yytext); }
-{variable}  { printToken("VARIABLE", yytext); }
+{variable}  { printToken("IDENT", yytext); }
 
 <<EOF>>     { static int once = 0; if (once++) {yyterminate();} }
 [ \t\r\n]+  {;}
@@ -133,8 +134,6 @@ int main(int argc, char* argv[]) {
 
     yylex();
     printf("\nTotal line: %d\n", yylineno);
-
-    /* printf("comment line: %d\n", comment_num); */
     fclose(yyin);
     return 0;
 }

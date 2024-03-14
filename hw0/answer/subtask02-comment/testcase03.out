@@ -1,7 +1,7 @@
 COMMENT  	 // comment
 MULTI_COMMENT 	 /*
 multi comment
-    Tab \t
+	Tab \t
     Space
 * star *
 */
@@ -11,10 +11,10 @@ MULTI_COMMENT 	 /**
 MULTI_COMMENT 	 /*Flowing multi comment*/
 COMMENT  	 //Flowing comment
 INT_T
-VARIABLE 	 main
+IDENT    	 main
 '('
 STR_T
-VARIABLE 	 argv
+IDENT    	 argv
 '['
 ']'
 ')'
