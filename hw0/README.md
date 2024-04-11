@@ -114,10 +114,10 @@ Total line: 13
 | `-`               | SUB           |
 | `*`               | MUL           |
 | `/`               | DIV           |
-| `%`               | MOD           |
+| `%`               | REM           |
 | `!`               | NOT           |
-| `>`               | LES           |
-| `<`               | GTR           |
+| `>`               | GTR           |
+| `<`               | LES           |
 | `>=`              | GEQ           |
 | `<=`              | LEQ           |
 | `==`              | EQL           |

@@ -49,8 +49,8 @@ fnumber ({digit}*\.{digit}+)
 "%"         { printToken("MOD", NULL); }
 "!"         { printToken("NOT", NULL); }
 
-">"         { printToken("LES", NULL); }
-"<"         { printToken("GTR", NULL); }
+">"         { printToken("GTR", NULL); }
+"<"         { printToken("LES", NULL); }
 ">="        { printToken("GEQ", NULL); }
 "<="        { printToken("LEQ", NULL); }
 "=="        { printToken("EQL", NULL); }

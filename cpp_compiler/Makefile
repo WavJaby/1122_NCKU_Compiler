@@ -8,14 +8,14 @@ HEADER := ./compiler_common.h
 COMPILER := compiler
 EXEC := Main
 
-all: create_build_folder ${COMPILER} compile debug run
+all: ${COMPILER} compile debug run
 
 .PHONY: main.c
 
 create_build_folder:
 	mkdir -p ${BUILD}
 
-${COMPILER}: lex.yy.c y.tab.c main.c
+${COMPILER}: create_build_folder lex.yy.c y.tab.c main.c
 	$(info ########## Create compiler ##########)
 	${CC} ${CFLAGS} -o ${BUILD}/$@ -iquote ./ -iquote ../ ${BUILD}/lex.yy.c ${BUILD}/y.tab.c ${BUILD}/main.o
 
@@ -41,4 +41,4 @@ run:
 	@java ${EXEC}
 
 clean:
-	rm -f ${BUILD}/${COMPILER} ${BUILD}/y.tab.* ${BUILD}/y.output ${BUILD}/lex.* ${EXEC}.class
+	rm -rf ${BUILD}

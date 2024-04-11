@@ -36,34 +36,41 @@ fnumber ({digit}*\.{digit}+)
 <STR_CON>'          { BEGIN(INITIAL); return STRING_LIT; }
 <STR_CON>(\\'|[^'\n])* { yylval.s_var = strdup(yytext); }
 
-">>"        { return RSHIFT; }
-"<<"        { return LSHIFT; }
-"&"         { return '&'; }
-"|"         { return '|'; }
-'~'         { return '~'; }
+">>"        { return SHR; }
+"<<"        { return SHL; }
+"&"         { return BAN; }
+"|"         { return BOR; }
+"~"         { return BNT; }
+"^"         { return BXO; }
 
-"+"         { return '+'; }
-"-"         { return '-'; }
-"*"         { return '*'; }
-"/"         { return '/'; }
-"%"         { return '%'; }
-"!"         { return '!'; }
+"+"         { return ADD; }
+"-"         { return SUB; }
+"*"         { return MUL; }
+"/"         { return DIV; }
+"%"         { return MOD; }
+"!"         { return NOT; }
 
-">"         { return '>'; }
-"<"         { return '<'; }
+">"         { return GTR; }
+"<"         { return LES; }
 ">="        { return GEQ; }
 "<="        { return LEQ; }
 "=="        { return EQL; }
 "!="        { return NEQ; }
-"&&"        { return LAND; }
+"&&"        { return LAN; }
 "||"        { return LOR; }
 
-"="         { return ASSIGN; }
+"="         { return VAL_ASSIGN; }
 "+="        { return ADD_ASSIGN; }
 "-="        { return SUB_ASSIGN; }
 "*="        { return MUL_ASSIGN; }
 "/="        { return DIV_ASSIGN; }
 "%="        { return REM_ASSIGN; }
+">>="       { return SHR_ASSIGN; }
+"<<="       { return SHL_ASSIGN; }
+"&="        { return BAN_ASSIGN; }
+"|="        { return BOR_ASSIGN; }
+"++"        { return INC_ASSIGN; }
+"--"        { return DEC_ASSIGN; }
 
 "("         { return '('; }
 ")"         { return ')'; }
@@ -78,14 +85,15 @@ fnumber ({digit}*\.{digit}+)
 
 "cout"      { return COUT; }
 
+"auto"      { yylval.var_type = OBJECT_TYPE_AUTO; return VARIABLE_T; }
 "void"      { yylval.var_type = OBJECT_TYPE_VOID; return VARIABLE_T; }
 "char"      { yylval.var_type = OBJECT_TYPE_CHAR; return VARIABLE_T; }
 "int"       { yylval.var_type = OBJECT_TYPE_INT; return VARIABLE_T; }
 "long"      { yylval.var_type = OBJECT_TYPE_LONG; return VARIABLE_T; }
 "float"     { yylval.var_type = OBJECT_TYPE_FLOAT; return VARIABLE_T; }
 "double"    { yylval.var_type = OBJECT_TYPE_DOUBLE; return VARIABLE_T; }
-"bool"      { yylval.var_type = OBJECT_TYPE_BOOLEAN; return VARIABLE_T; }
-"string"    { yylval.var_type = OBJECT_TYPE_STRING; return VARIABLE_T; }
+"bool"      { yylval.var_type = OBJECT_TYPE_BOOL; return VARIABLE_T; }
+"string"    { yylval.var_type = OBJECT_TYPE_STR; return VARIABLE_T; }
 
 "if"        { return IF; }
 "else"      { return ELSE; }
@@ -98,7 +106,7 @@ fnumber ({digit}*\.{digit}+)
 "false"     { yylval.b_var = false; return BOOL_LIT; }
 {inumber}   { yylval.i_var = atoi(yytext); return INT_LIT; }
 {fnumber}   { yylval.f_var = atof(yytext); return FLOAT_LIT; }
-{variable}  { yylval.s_var = strdup(yytext); return VARIABLE; }
+{variable}  { yylval.s_var = strdup(yytext); return IDENT; }
 
 <<EOF>>     { 
                 static int once = 0;

@@ -26,8 +26,8 @@
 
 /* Token without return */
 %token COUT
-%token GEQ LEQ EQL NEQ LOR LAND
-%token ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN REM_ASSIGN
+%token SHR SHL BAN BOR BNT BXO ADD SUB MUL DIV MOD NOT GTR LES GEQ LEQ EQL NEQ LAN LOR
+%token VAL_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN REM_ASSIGN SHR_ASSIGN SHL_ASSIGN BAN_ASSIGN BOR_ASSIGN INC_ASSIGN DEC_ASSIGN
 %token IF ELSE FOR WHILE LOOP
 %token RETURN BREAK
 %token ARROW AS IN RSHIFT LSHIFT
@@ -38,18 +38,18 @@
 %token <i_var> INT_LIT
 %token <f_var> FLOAT_LIT
 %token <s_var> STRING_LIT
-%token <s_var> VARIABLE
+%token <s_var> IDENT
 
 /* Nonterminal with return, which need to sepcify type */
 %type <object_val> Expression
 %type <object_val> ValueStmt
 
 %left LOR
-%left LAND
-%left '>' '<' EQL NEQ LEQ GEQ
+%left LAN
+%left GTR LES EQL NEQ LEQ GEQ
 %left LSHIFT RSHIFT
-%left '+' '-'
-%left '*' '/' '%'
+%left ADD SUB
+%left MUL DIV MOD
 
 /* %nonassoc IFX
 %nonassoc ELSE */
@@ -72,9 +72,9 @@ StmtList
 
 Stmt
     : ScopeStmt
-    | VARIABLE_T VARIABLE '(' FunctionVariableStmtList ')' { createMethod($<var_type>1, $<s_var>2); } ScopeStmt
-    | VARIABLE '(' FunctionVariableStmtList ')' ';'
-    | VARIABLE_T VARIABLE ASSIGN Expression ';'
+    | VARIABLE_T IDENT '(' FunctionVariableStmtList ')' { createMethod($<var_type>1, $<s_var>2); } ScopeStmt
+    | IDENT '(' FunctionVariableStmtList ')' ';'
+    | VARIABLE_T IDENT VAL_ASSIGN Expression ';'
     | COUT LSHIFT STRING_LIT ';'
     | ';'
 ;
@@ -90,8 +90,8 @@ FunctionVariableStmtList
     |
 ;
 FunctionVariableStmt
-    : VARIABLE_T VARIABLE
-    | VARIABLE_T VARIABLE '[' ']'
+    : VARIABLE_T IDENT
+    | VARIABLE_T IDENT '[' ']'
 ;
 
 Expression
