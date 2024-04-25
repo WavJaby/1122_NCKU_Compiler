@@ -5,12 +5,16 @@
     #define YY_NO_UNPUT
     #define YY_NO_INPUT
     
-    #define Return(tokenType) yycolumn += yyleng; return tokenType
+    #define Return(tokenType) return tokenType
 
     extern YYSTYPE yylval;
     extern int yyleng;
     
-    int yycolumn;
+    int yycolumn, yyoffset;
+
+    #define YY_USER_ACTION  \
+        yyoffset += yyleng;   \
+        yycolumn += yyleng;
 %}
 
 /* Define regular expression label */
@@ -115,7 +119,7 @@ fnumber ({digit}*\.{digit}+)
 {fnumber}   { yylval.f_var = atof(yytext); Return(FLOAT_LIT); }
 {variable}  { yylval.s_var = strdup(yytext); Return(IDENT); }
 
-[ \t]+      { yycolumn += yyleng; }
+[ \t]+      {}
 \r?\n       { yycolumn = 0; }
 
 <<EOF>>     { 

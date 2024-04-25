@@ -8,10 +8,11 @@
 
 extern int yylineno;
 extern int yycolumn;
+extern int yyoffset;
 extern int yyleng;
-extern char* yytext;
 extern char* yyInputFileName;
 extern bool compileError;
+extern FILE* yyin;
 
 #define ERROR_PREFIX "%s:%d:%d: error: "
 
@@ -22,15 +23,19 @@ extern bool compileError;
         YYABORT;                                                                                      \
     }
 
-void yyerror(char const *msg) {
+void yyerror(char const* msg) {
     printf(ERROR_PREFIX " %s\n", yyInputFileName, yylineno, yycolumn - yyleng + 1, msg);
-    yytext[strlen(yytext)] = ' ';
-    for(int i = 0; yytext[i]; i++)
-        if (yytext[i] == '\r' || yytext[i] == '\n') {
-            yytext[i] = 0;
-            break;
-        }
-    printf("%6d |%s\n       |%*.s^\n", yylineno, yytext - yycolumn + yyleng, yycolumn - yyleng, "");
+    char cache[64 + 1];
+    cache[64] = 0;
+    printf("%d\n", yyoffset);
+    fseek(yyin, 0, SEEK_SET);
+    fread(cache, 1, 64, yyin);
+    // for (int i = 0; cache[i]; i++)
+    //     if (cache[i] == '\r' || cache[i] == '\n') {
+    //         cache[i] = 0;
+    //         break;
+    //     }
+    printf("%6d |%s\n       |%*.s^\n", yylineno, cache - yycolumn + yyleng, yycolumn - yyleng, "");
     compileError = true;
 }
 
