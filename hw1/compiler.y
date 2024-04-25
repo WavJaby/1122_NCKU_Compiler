@@ -107,6 +107,8 @@ Stmt
     | ';'
     | FOR '(' ForVariableStmt ';' { forBegin(); } Expression ';' { forConditionEnd(&$<object_val>6); } Expression ')'
         { forHeaderEnd(); } ScopeStmt { forEnd(); }
+    | WHILE '(' Expression ')' { printf("WHILE\n"); } ScopeStmt
+    | IfStmt
     | COUT CoutParmListStmt ';' { stdoutPrint(); }
     | VARIABLE_T { variableIdentType = $<var_type>1; } VariableIdentListStmt ';'
     | Expression ';'
@@ -115,10 +117,12 @@ Stmt
     | CONTINUE ';' { printf("CONTINUE\n"); }
 ;
 
+/* Cout */
 CoutParmListStmt
     : CoutParmListStmt SHL Expression { pushFunInParm(&$<object_val>3); }
     | SHL Expression { pushFunInParm(&$<object_val>2); }
 ;
+
 /* Create variable */
 VariableIdentListStmt
     : VariableIdentListStmt ',' VariableIdentStmt
@@ -129,9 +133,20 @@ VariableIdentStmt
     | IDENT { if(!createVariable(variableIdentType, $<s_var>1, VAR_FLAG_DEFAULT)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); }
 ;
 
+/* For Statement */
 ForVariableStmt
     : VARIABLE_T IDENT VAL_ASSIGN Expression { if(!createVariable($<var_type>1, $<s_var>2, VAR_FLAG_DEFAULT)) yyerrorf("Failed to create variable '%s'\n", $<s_var>2); }
     |
+;
+
+/* If Statement */
+IfStmt
+    : IF '(' Expression ')' { printf("IF\n"); } ScopeStmt ElseStmt
+;
+ElseStmt
+    : /* No "else" stament*/
+    | ELSE { printf("ELSE\n"); } IfStmt
+    | ELSE { printf("ELSE\n"); } ScopeStmt
 ;
 
 Expression

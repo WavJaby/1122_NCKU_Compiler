@@ -88,6 +88,7 @@ void pushFunParm(ObjectType variableType, char* variableName, int variableFlag) 
     SymbolData* symbol = obj->symbol = malloc(sizeof(SymbolData));
     symbol->name = (char*)variableName;
     symbol->lineno = yylineno;
+    symbol->addr = variableAddress++;
     symbol->func_sig = "-";
 
     linkedList_addPtr(&funcParm, obj);
@@ -113,7 +114,7 @@ void createFunction(ObjectType variableType, char* funcName) {
             sigIndex += 18;
         } else
             sig[sigIndex++] = toupper(*objectTypeName[obj->type]);
-
+        symbol->index = ((Map*)scopeList.last->value)->size;
         map_putpp(scopeList.last->value, symbol->name, obj);
         printf("> Insert `%s` (addr: %ld) to scope level %u\n", symbol->name, symbol->addr, scopeLevel);
     });
