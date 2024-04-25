@@ -10,43 +10,7 @@
 #include "../../WJCL/list/wjcl_linked_list.h"
 #include "object_map_entries.h"
 
-#define DISPVAR "%s%s"
-#define setDISPVAR(obj) (obj)->symbol                                \
-                            ? (obj)->value &VAR_FLAG_PTR_VALUE ? "*" \
-                              : (obj)->value &VAR_FLAG_REG     ? "_" \
-                                                               : ""  \
-                            : "",                                    \
-                        (obj)->symbol ? (obj)->symbol->name : ""
-
-#define isReg(obj) (obj)->symbol && (obj)->value& VAR_FLAG_REG
-#define isPtrVal(obj) (obj)->symbol && (obj)->value& VAR_FLAG_PTR_VALUE
-
 #define debug printf("%s:%d: ############### debug\n", __FILE__, __LINE__)
-#ifdef DEBUG_OUT
-#define codeOut(format, ...)      \
-    if (useCacheCodeStream != -1) \
-    ssprintf(cacheCodeStream[useCacheCodeStream], "%*s" format, indent << 2, "", __VA_ARGS__) else fprintf(outFile, "%*s" format, indent << 2, "", __VA_ARGS__)
-#define codeOutS(format)          \
-    if (useCacheCodeStream != -1) \
-    ssprintf(cacheCodeStream[useCacheCodeStream], "%*s" format, indent << 2, "") else fprintf(outFile, "%*s" format, indent << 2, "")
-#define debugOut(format, ...)                                                                                                                    \
-    if (useCacheCodeStream != -1)                                                                                                                \
-        ssprintf(cacheCodeStream[useCacheCodeStream], "  // " format "\n", __VA_ARGS__) else fprintf(outFile, "  // " format "\n", __VA_ARGS__); \
-    printf(format "\n", __VA_ARGS__)
-#define debugOutRaw(...)                                                                               \
-    if (useCacheCodeStream != -1)                                                                      \
-        ssprintf(cacheCodeStream[useCacheCodeStream], __VA_ARGS__) else fprintf(outFile, __VA_ARGS__); \
-    printf(__VA_ARGS__)
-#else
-#define codeOut(format, ...)      \
-    if (useCacheCodeStream != -1) \
-    ssprintf(cacheCodeStream[useCacheCodeStream], format "\n", __VA_ARGS__) else fprintf(outFile, format "\n", __VA_ARGS__)
-#define codeOutS(format)          \
-    if (useCacheCodeStream != -1) \
-    ssprintf(cacheCodeStream[useCacheCodeStream], format "\n") else fprintf(outFile, format "\n")
-#define debugOut(...)
-#define debugOutRaw(...)
-#endif
 
 #define toupper(_char) (_char - (char)32)
 
@@ -61,7 +25,6 @@ const char* objectTypeName[] = {
 };
 
 char* yyInputFileName;
-FILE* outFile;
 bool compileError;
 
 int indent = 0;
@@ -317,8 +280,9 @@ bool objectDecAssign(Object* a, Object* out) {
     return false;
 }
 
-bool objectCast(ObjectType variableType, Object* dest, Object* out){
+bool objectCast(ObjectType variableType, Object* dest, Object* out) {
     printf("Cast to %s\n", objectTypeName[variableType]);
+    return false;
 }
 
 Object* findVariable(char* variableName) {

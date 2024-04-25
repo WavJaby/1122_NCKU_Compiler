@@ -1,10 +1,11 @@
 #!/bin/bash
-input_dir="input"
-result_dir="result"
-answer_dir="answer"
-compiler="./build/out/compiler"
+input_dir="/home/share/hw2/input"
+result_dir="/home/$USER/2024-Spring-NCKU-CompilerHW2/result"
+answer_dir="/home/share/hw2/answer"
+compiler="/home/$USER/2024-Spring-NCKU-CompilerHW2/build/out/compiler"
 
 RED="\033[0;31m"
+YELLOW="\033[0;33m"
 GREEN="\033[0;32m"
 RESET="\033[0m"
 
@@ -57,7 +58,7 @@ make build
 
 get_score() {
     local subtask="$1"
-    case "$subtask" in 
+    case "$subtask" in
         subtask01-helloworld) return 8 ;;
         subtask02-comment) return 8 ;;
         subtask03-precedenc) return 8 ;;
@@ -79,17 +80,23 @@ run_test() {
     local subtask="$1"
     local testcase="$2"
     local output_file="$result_dir/$subtask/$testcase.out"
+    local answer_file="$answer_dir/$subtask/$testcase.out"
 
     # Compile the testcase
     $compiler "$input_dir/$subtask/$testcase.cpp" > "$output_file"
     # $compiler "$input_dir/$subtask/$testcase.cpp"
 
     if [ $? -eq 0 ]; then
-        # Check if expected output file exists
-        if [ -f "$output_file" ]; then
-            Compare the output with expected output
-            diff_output=$(git diff --no-prefix --no-index --ignore-cr-at-eol --color "$answer_dir/$subtask/$testcase.out" "$output_file")
-            if [ -z "$diff_output" ]; then
+        if [ ! -f "$answer_file" ]; then
+            # Check if answer exist
+            echo -e "🫠$YELLOW $subtask/$testcase Answer not ready yet$RESET"
+        elif [ ! -f "$output_file" ]; then
+            # Check if expected output file exists
+            echo -e "❌$RED $subtask/$testcase No expected output file found$RESET"
+        else
+            # Compare the output with expected output
+            diff --color -u "$answer_file" "$output_file"
+            if [ $? -eq 0 ]; then
                 echo -e "✅$GREEN $testcase output matches expected$RESET"
                 return 1
             else
@@ -98,8 +105,6 @@ run_test() {
                     echo "$diff_output"
                 fi
             fi
-        else
-            echo -e "❌$RED $subtask/$testcase No expected output file found$RESET"
         fi
     else
         echo -e "❌$RED $subtask/$testcase exit with code $?$RESET"

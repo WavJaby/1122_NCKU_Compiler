@@ -27,7 +27,7 @@ bool constantObjectEquals(void* a, void* b) {
     if (objA->type != objA->type)
         return false;
     switch (objA->type) {
-        case OBJECT_TYPE_STRING:
+        case OBJECT_TYPE_STR:
             return strcmp((const char*)objA->value, (const char*)objA->value) == 0;
         default:
             return objA->value == objB->value;
@@ -35,7 +35,7 @@ bool constantObjectEquals(void* a, void* b) {
 }
 uint32_t constantObjectHash(void* key) {
     ConstantObject* obj = (ConstantObject*)key;
-    if (obj->type == OBJECT_TYPE_STRING)
+    if (obj->type == OBJECT_TYPE_STR)
         return obj->type | strHash((const char*)obj->value);
     else
         return obj->type | (obj->value + (obj->value >> 32));
@@ -43,7 +43,7 @@ uint32_t constantObjectHash(void* key) {
 
 void constantObjectFree(void* key, void* value) {
     ConstantObject* obj = (ConstantObject*)key;
-    if (obj->type == OBJECT_TYPE_STRING)
+    if (obj->type == OBJECT_TYPE_STR)
         free((char*)obj->value);
 }
 

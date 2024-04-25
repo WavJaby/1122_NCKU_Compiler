@@ -46,7 +46,7 @@ fnumber ({digit}*\.{digit}+)
 "-"         { printToken("SUB", NULL); }
 "*"         { printToken("MUL", NULL); }
 "/"         { printToken("DIV", NULL); }
-"%"         { printToken("MOD", NULL); }
+"%"         { printToken("REM", NULL); }
 "!"         { printToken("NOT", NULL); }
 
 ">"         { printToken("GTR", NULL); }

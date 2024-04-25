@@ -35,7 +35,7 @@ IDENT    	 mod
 COMMENT  	 // cool!
 RETURN
 IDENT    	 num
-MOD
+REM
 IDENT    	 mod
 ';'
 '}'
@@ -123,7 +123,7 @@ IDENT    	 apple
 ','
 INT_LIT  	 2
 ')'
-MOD
+REM
 INT_LIT  	 2
 EQL
 INT_LIT  	 1

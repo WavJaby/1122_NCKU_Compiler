@@ -42,7 +42,7 @@ IDENT    	 endl
 IF
 '('
 IDENT    	 i
-MOD
+REM
 INT_LIT  	 2
 EQL
 INT_LIT  	 0

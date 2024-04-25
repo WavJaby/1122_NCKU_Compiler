@@ -47,7 +47,7 @@ fnumber ({digit}*\.{digit}+)
 "-"         { return SUB; }
 "*"         { return MUL; }
 "/"         { return DIV; }
-"%"         { return MOD; }
+"%"         { return REM; }
 "!"         { return NOT; }
 
 ">"         { return GTR; }

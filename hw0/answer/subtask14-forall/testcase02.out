@@ -61,7 +61,7 @@ IDENT    	 j
 ADD
 INT_LIT  	 998244353
 ')'
-MOD
+REM
 INT_LIT  	 82781
 ';'
 '}'
