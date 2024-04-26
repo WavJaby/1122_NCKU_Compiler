@@ -84,6 +84,7 @@ IDENT    	 endl
 ';'
 COUT
 SHL
+'('
 FLOAT_LIT 	 3.0
 SUB
 FLOAT_LIT 	 4.0
@@ -108,6 +109,7 @@ LAN
 NOT
 NOT
 BOOL_LIT 	 false
+')'
 SHL
 IDENT    	 endl
 ';'

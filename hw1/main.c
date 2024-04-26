@@ -17,11 +17,38 @@
 const char* objectTypeName[] = {
     [OBJECT_TYPE_UNDEFINED] = "undefined",
     [OBJECT_TYPE_VOID] = "void",
+    [OBJECT_TYPE_CHAR] = "char",
+    [OBJECT_TYPE_SHORT] = "short",
     [OBJECT_TYPE_INT] = "int",
+    [OBJECT_TYPE_LONG] = "long",
     [OBJECT_TYPE_FLOAT] = "float",
+    [OBJECT_TYPE_DOUBLE] = "double",
     [OBJECT_TYPE_BOOL] = "bool",
     [OBJECT_TYPE_STR] = "string",
-    [OBJECT_TYPE_FUNCTION] = "function",
+};
+const uint8_t objectTypeSize[] = {
+    [OBJECT_TYPE_UNDEFINED] = 0,
+    [OBJECT_TYPE_VOID] = 0,
+    [OBJECT_TYPE_CHAR] = 1,
+    [OBJECT_TYPE_SHORT] = 2,
+    [OBJECT_TYPE_INT] = 4,
+    [OBJECT_TYPE_LONG] = 8,
+    [OBJECT_TYPE_FLOAT] = 4,
+    [OBJECT_TYPE_DOUBLE] = 8,
+    [OBJECT_TYPE_BOOL] = 1,
+    [OBJECT_TYPE_STR] = 0,
+};
+const uint8_t objectTypePriority[] = {
+    [OBJECT_TYPE_UNDEFINED] = 0,
+    [OBJECT_TYPE_VOID] = 0,
+    [OBJECT_TYPE_CHAR] = 2,
+    [OBJECT_TYPE_SHORT] = 3,
+    [OBJECT_TYPE_INT] = 4,
+    [OBJECT_TYPE_LONG] = 5,
+    [OBJECT_TYPE_FLOAT] = 6,
+    [OBJECT_TYPE_DOUBLE] = 7,
+    [OBJECT_TYPE_BOOL] = 1,
+    [OBJECT_TYPE_STR] = 0,
 };
 
 char* yyInputFileName;
@@ -31,22 +58,22 @@ int indent = 0;
 int scopeLevel = -1;
 int funcLineNo = 0;
 int variableAddress = 0;
-ObjectType variableIdentType;
 
-Map staticVar;
-LinkedList scopeList = linkedList_create();
-LinkedList funcParm = linkedList_create();
+Map staticVar;                                    // Map<char*, Object*>
+LinkedList scopeListStack = linkedList_create();  // LinkedList<Map<char*, Object*>*>
+LinkedList funcParm = linkedList_create();        // LinkedList<Object*>
+LinkedList funcArgStack = linkedList_create();    // LinkedList<LinkedList<Object*>>
 
 void pushScope() {
     printf("> Create symbol table (scope level %d)\n", ++scopeLevel);
-    linkedList_addPtr(&scopeList, map_new(objectInfo));
+    linkedList_addPtr(&scopeListStack, map_new(objectInfo));
 }
 
 void dumpScope() {
     printf("\n> Dump symbol table (scope level: %d)\n", scopeLevel);
 
     printf("Index     Name                Type      Addr      Lineno    Func_sig  \n");
-    Map* scope = (Map*)scopeList.last->value;
+    Map* scope = (Map*)scopeListStack.last->value;
     Object** sorted = (Object**)malloc(sizeof(Object*) * scope->size);
     map_entries(scope, i, {
         Object* obj = (Object*)i->value;
@@ -55,14 +82,16 @@ void dumpScope() {
     for (size_t i = 0; i < scope->size; i++) {
         Object* obj = (Object*)sorted[i];
         SymbolData* symbolData = obj->symbol;
+        const char* typeName = symbolData->func_sig ? "function" : objectTypeName[obj->type];
+        char* funcSig = symbolData->func_sig ? symbolData->func_sig : "-";
         printf("%-10d%-20s%-10s%-10ld%-10d%-10s\n",
-               symbolData->index, symbolData->name, objectTypeName[obj->type],
-               symbolData->addr, symbolData->lineno, symbolData->func_sig);
+               symbolData->index, symbolData->name, typeName,
+               symbolData->addr, symbolData->lineno, funcSig);
     }
 
-    map_free((Map*)scopeList.last->value);
-    free(scopeList.last->value);
-    linkedList_removeNode(&scopeList, scopeList.last);
+    map_free((Map*)scopeListStack.last->value);
+    free(scopeListStack.last->value);
+    linkedList_removeNode(&scopeListStack, scopeListStack.last);
     --scopeLevel;
 }
 
@@ -72,16 +101,16 @@ Object* createVariable(ObjectType variableType, char* variableName, int variable
     obj->value = variableFlag;
     SymbolData* symbol = obj->symbol = malloc(sizeof(SymbolData));
     symbol->name = (char*)variableName;
-    symbol->index = ((Map*)scopeList.last->value)->size;
+    symbol->index = ((Map*)scopeListStack.last->value)->size;
     symbol->lineno = yylineno;
     symbol->addr = variableAddress++;
-    symbol->func_sig = "-";
-    map_putpp(scopeList.last->value, (void*)variableName, obj);
+    symbol->func_sig = NULL;
+    map_putpp(scopeListStack.last->value, (void*)variableName, obj);
     printf("> Insert `%s` (addr: %ld) to scope level %u\n", variableName, symbol->addr, scopeLevel);
     return obj;
 }
 
-void pushFunParm(ObjectType variableType, char* variableName, int variableFlag) {
+void functionParmPush(ObjectType variableType, char* variableName, int variableFlag) {
     Object* obj = malloc(sizeof(Object));
     obj->type = variableType;
     obj->value = variableFlag;
@@ -89,17 +118,18 @@ void pushFunParm(ObjectType variableType, char* variableName, int variableFlag) 
     symbol->name = (char*)variableName;
     symbol->lineno = yylineno;
     symbol->addr = variableAddress++;
-    symbol->func_sig = "-";
+    symbol->func_sig = NULL;
 
     linkedList_addPtr(&funcParm, obj);
 }
 
-void createFunction(ObjectType variableType, char* funcName) {
+void functionCreate(ObjectType returnType, char* funcName) {
     printf("func: %s\n", funcName);
     Object* funcObj = (Object*)malloc(sizeof(Object));
-    funcObj->type = OBJECT_TYPE_FUNCTION;
+    funcObj->type = returnType;
     funcObj->value = 0;
-    map_putpp(scopeList.last->value, (void*)funcName, funcObj);
+    int funcIndex = ((Map*)scopeListStack.last->value)->size;
+    map_putpp(scopeListStack.last->value, (void*)funcName, funcObj);
     printf("> Insert `%s` (addr: -1) to scope level %u\n", funcName, scopeLevel);
     pushScope();
     // Add variables
@@ -114,14 +144,14 @@ void createFunction(ObjectType variableType, char* funcName) {
             sigIndex += 18;
         } else
             sig[sigIndex++] = toupper(*objectTypeName[obj->type]);
-        symbol->index = ((Map*)scopeList.last->value)->size;
-        map_putpp(scopeList.last->value, symbol->name, obj);
+        symbol->index = ((Map*)scopeListStack.last->value)->size;
+        map_putpp(scopeListStack.last->value, symbol->name, obj);
         printf("> Insert `%s` (addr: %ld) to scope level %u\n", symbol->name, symbol->addr, scopeLevel);
     });
     if (funcParm.length == 0)
         sig[sigIndex++] = 'V';
     sig[sigIndex++] = ')';
-    sig[sigIndex++] = toupper(*objectTypeName[variableType]);
+    sig[sigIndex++] = toupper(*objectTypeName[returnType]);
     sig = realloc(sig, sigIndex + 1);
     sig[sigIndex] = 0;
     // Create function description
@@ -129,15 +159,27 @@ void createFunction(ObjectType variableType, char* funcName) {
     symbol->name = funcName;
     symbol->func_sig = sig;
     symbol->lineno = funcLineNo;
+    symbol->index = funcIndex;
     symbol->addr = -1;
     linkedList_free(&funcParm);
 }
 
-void debugPrintInst(char instc, Object* a, Object* b, Object* out) {
-    return;
+void functionArgNew() {
+    LinkedList* funcArg = linkedList_addPtr(&funcArgStack, linkedList_new());
 }
 
-bool objectExpression(char op, Object* dest, Object* val, Object* out) {
+void functionArgPush(Object* obj) {
+    Object* cache = (Object*)malloc(sizeof(Object));
+    memcpy(cache, obj, sizeof(Object));
+    linkedList_addPtr(funcArgStack.last->value, cache);
+}
+
+void functionCall(char* funcName, Object* out) {
+    linkedList_free(funcArgStack.last->value);
+    linkedList_removeNode(&funcArgStack, funcArgStack.last);
+}
+
+bool objectExpression(char op, Object* a, Object* b, Object* out) {
     switch (op) {
     case '+':
         printf("ADD\n");
@@ -157,15 +199,25 @@ bool objectExpression(char op, Object* dest, Object* val, Object* out) {
     default:
         return true;
     }
+
+    uint8_t aPri = objectTypePriority[a->type], bPri = objectTypePriority[b->type];
+    if (!aPri || !bPri)
+        return true;
+
+    if (aPri < bPri)
+        out->type = b->type;
+    else
+        out->type = a->type;
+
     return false;
 }
 
 bool objectExpBinary(char op, Object* a, Object* b, Object* out) {
     switch (op) {
-    case '>':
+    case '>':  // >>
         printf("SHR\n");
         break;
-    case '<':
+    case '<':  // <<
         printf("SHL\n");
         break;
     case '&':
@@ -180,6 +232,15 @@ bool objectExpBinary(char op, Object* a, Object* b, Object* out) {
     default:
         return true;
     }
+
+    uint8_t aPri = objectTypePriority[a->type], bPri = objectTypePriority[b->type];
+    if (!aPri || !bPri)
+        return true;
+
+    if (aPri < bPri)
+        out->type = b->type;
+    else
+        out->type = a->type;
     return false;
 }
 
@@ -191,27 +252,66 @@ bool objectExpBoolean(char op, Object* a, Object* b, Object* out) {
     case '<':
         printf("LES\n");
         break;
-    case '.':
+    case '.':  // >=
         printf("GEQ\n");
         break;
-    case ',':
+    case ',':  // <=
         printf("LEQ\n");
         break;
     case '=':
         printf("EQL\n");
         break;
-    case '!':
+    case '!':  // !=
         printf("NEQ\n");
         break;
-    case '&':
+    case '&':  // &&
         printf("LAN\n");
         break;
-    case '|':
+    case '|':  // ||
         printf("LOR\n");
         break;
     default:
         return true;
     }
+    out->type = OBJECT_TYPE_BOOL;
+    return false;
+}
+
+bool objectNotBinaryExpression(Object* a, Object* out) {
+    printf("BNT\n");
+    out->type = a->type;
+    return false;
+}
+
+bool objectNegExpression(Object* a, Object* out) {
+    printf("NEG\n");
+    out->type = a->type;
+    return false;
+}
+
+bool objectNotExpression(Object* a, Object* out) {
+    printf("NOT\n");
+    out->type = OBJECT_TYPE_BOOL;
+    return false;
+}
+
+bool objectCast(ObjectType variableType, Object* a, Object* out) {
+    printf("Cast to %s\n", objectTypeName[variableType]);
+    out->type = variableType;
+    return false;
+}
+
+// ++
+bool objectIncAssign(Object* a, Object* out) {
+    printf("INC_ASSIGN\n");
+    out->type = a->type;
+    return false;
+}
+
+// --
+bool objectDecAssign(Object* a, Object* out) {
+    printf("DEC_ASSIGN\n");
+    out->type = a->type;
     return false;
 }
 
@@ -232,10 +332,10 @@ bool objectExpAssign(char op, Object* dest, Object* val, Object* out) {
     case '%':
         printf("REM_ASSIGN\n");
         break;
-    case '>':
+    case '>':  // >>=
         printf("SHR_ASSIGN\n");
         break;
-    case '<':
+    case '<':  // <<=
         printf("SHL_ASSIGN\n");
         break;
     case '&':
@@ -247,48 +347,19 @@ bool objectExpAssign(char op, Object* dest, Object* val, Object* out) {
     default:
         return true;
     }
+    out->type = dest->type;
     return false;
 }
 
 bool objectValueAssign(Object* dest, Object* val, Object* out) {
     printf("EQL_ASSIGN\n");
-    return false;
-}
-
-bool objectNotBinaryExpression(Object* dest, Object* out) {
-    printf("BNT\n");
-    return false;
-}
-
-bool objectNegExpression(Object* dest, Object* out) {
-    printf("NEG\n");
-    return false;
-}
-bool objectNotExpression(Object* dest, Object* out) {
-    printf("NOT\n");
-    return false;
-}
-
-// ++
-bool objectIncAssign(Object* a, Object* out) {
-    printf("INC_ASSIGN\n");
-    return false;
-}
-
-// --
-bool objectDecAssign(Object* a, Object* out) {
-    printf("DEC_ASSIGN\n");
-    return false;
-}
-
-bool objectCast(ObjectType variableType, Object* dest, Object* out) {
-    printf("Cast to %s\n", objectTypeName[variableType]);
+    out->type = dest->type;
     return false;
 }
 
 Object* findVariable(char* variableName) {
     Object* variable = NULL;
-    linkedList_foreachPtr(&scopeList, Map*, scope, {
+    linkedList_foreachPtr(&scopeListStack, Map*, scope, {
         variable = map_get(scope, variableName);
         if (variable)
             break;
@@ -301,19 +372,14 @@ Object* findVariable(char* variableName) {
     return variable;
 }
 
-void pushFunInParm(Object* variable) {
-    if (!variable) return;
-    Object* cache = (Object*)malloc(sizeof(Object));
-    memcpy(cache, variable, sizeof(Object));
-    linkedList_addPtr(&funcParm, cache);
-}
-
 void stdoutPrint() {
+    LinkedList* funcArgs = funcArgStack.last->value;
     printf("cout");
-    linkedList_foreachPtr(&funcParm, Object*, obj, {
+    linkedList_foreachPtr(funcArgs, Object*, obj, {
         printf(" %s", objectTypeName[obj->type]);
     });
-    linkedList_free(&funcParm);
+    linkedList_free(funcArgs);
+    linkedList_removeNode(&funcArgStack, funcArgStack.last);
     printf("\n");
 }
 

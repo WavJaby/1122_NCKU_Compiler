@@ -1,6 +1,6 @@
 #include "../../WJCL/map/wjcl_hash_map.h"
 
-uint32_t strHash(const char* str) {
+uint32_t strHash(char* str) {
     uint32_t hash = 0, seed = 131;
     while (*str)
         hash = hash * seed + (*str++);
@@ -25,7 +25,7 @@ bool objectEquals(void* a, void* b) {
 uint32_t objectHash(void* key) {
     Object* obj = (Object*)key;
     if (obj->type == OBJECT_TYPE_STR)
-        return obj->type | strHash((const char*)obj->value);
+        return obj->type | strHash((char*)obj->value);
     else
         return obj->type | (obj->value + (obj->value >> 32));
 }
@@ -40,7 +40,7 @@ void objectFree(void* key, void* value) {
     }
 }
 
-NodeInfo objectInfo = {
+const NodeInfo objectInfo = {
     .equalsFunction = strEquals,
     .hashFunction = (uint32_t(*)(void*))strHash,
     .freeFlag = WJCL_HASH_MAP_FREE_VALUE,  // Key(variable name) free in objectFree

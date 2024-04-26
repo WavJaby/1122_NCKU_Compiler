@@ -5,6 +5,8 @@
     #include "main.h"
 
     int yydebug = 1;
+
+    ObjectType variableIdentType;
 %}
 
 /* Variable or self-defined structure */
@@ -36,8 +38,9 @@
 /* Nonterminal with return, which need to sepcify type */
 %type <object_val> Expression
 %type <object_val> ValueStmt
+%type <object_val> FunctionCallStmt
 
-%left VAL_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN REM_ASSIGN BAN_ASSIGN BOR_ASSIGN BXO_ASSIGN SHR_ASSIGN SHL_ASSIGN
+%right VAL_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN REM_ASSIGN BAN_ASSIGN BOR_ASSIGN BXO_ASSIGN SHR_ASSIGN SHL_ASSIGN
 %left LOR
 %left LAN
 %left BOR
@@ -48,10 +51,8 @@
 %left SHL SHR
 %left ADD SUB
 %left MUL DIV REM
-%right NOT BNT INC_ASSIGN DEC_ASSIGN ')'
-
-/* %nonassoc IFX
-%nonassoc ELSE */
+%left NOT BNT ')'
+%left INC_ASSIGN DEC_ASSIGN
 
 /* Yacc will start at this nonterminal */
 %start Program
@@ -80,7 +81,7 @@ DefineVariableStmt
 
 /* Function */
 FunctionDefStmt
-    : VARIABLE_T IDENT { funcLineNo = yylineno; } '(' FunctionParameterStmtList ')' { createFunction($<var_type>1, $<s_var>2); } '{' StmtList '}' { dumpScope(); }
+    : VARIABLE_T IDENT { funcLineNo = yylineno; } '(' FunctionParameterStmtList ')' { functionCreate($<var_type>1, $<s_var>2); } '{' StmtList '}' { dumpScope(); }
 ;
 FunctionParameterStmtList 
     : FunctionParameterStmtList ',' FunctionParameterStmt
@@ -88,9 +89,17 @@ FunctionParameterStmtList
     | /* Empty function parameter */
 ;
 FunctionParameterStmt
-    : VARIABLE_T IDENT { pushFunParm($<var_type>1, $<s_var>2, VAR_FLAG_DEFAULT); }
-    | VARIABLE_T MUL IDENT { pushFunParm($<var_type>1, $<s_var>3, VAR_FLAG_POINTER); } // Pointer
-    | VARIABLE_T IDENT '[' ']' { pushFunParm($<var_type>1, $<s_var>3, VAR_FLAG_ARRAY); } // Array
+    : VARIABLE_T IDENT { functionParmPush($<var_type>1, $<s_var>2, VAR_FLAG_DEFAULT); }
+    | VARIABLE_T MUL IDENT { functionParmPush($<var_type>1, $<s_var>3, VAR_FLAG_POINTER); } // Pointer
+    | VARIABLE_T IDENT '[' ']' { functionParmPush($<var_type>1, $<s_var>3, VAR_FLAG_ARRAY); } // Array
+;
+FunctionCallStmt
+    : IDENT { functionArgNew(); } '(' FunctionArgumentStmtList ')' { functionCall($<s_var>2, &$$); }
+;
+FunctionArgumentStmtList 
+    : FunctionArgumentStmtList ',' Expression { functionArgPush(&$<object_val>3); }
+    | Expression { functionArgPush(&$<object_val>1); }
+    | /* Empty function argument */
 ;
 
 /* Scope */
@@ -109,7 +118,8 @@ Stmt
         { forHeaderEnd(); } ScopeStmt { forEnd(); }
     | WHILE '(' Expression ')' { printf("WHILE\n"); } ScopeStmt
     | IfStmt
-    | COUT CoutParmListStmt ';' { stdoutPrint(); }
+
+    | COUT { functionArgNew(); } CoutParmListStmt ';' { stdoutPrint(); }
     | VARIABLE_T { variableIdentType = $<var_type>1; } VariableIdentListStmt ';'
     | Expression ';'
     | RETURN Expression ';' { printf("RETURN\n"); }
@@ -119,8 +129,8 @@ Stmt
 
 /* Cout */
 CoutParmListStmt
-    : CoutParmListStmt SHL Expression { pushFunInParm(&$<object_val>3); }
-    | SHL Expression { pushFunInParm(&$<object_val>2); }
+    : CoutParmListStmt SHL Expression { functionArgPush(&$<object_val>3); }
+    | SHL Expression { functionArgPush(&$<object_val>2); }
 ;
 
 /* Create variable */
@@ -183,11 +193,12 @@ Expression
     | Expression BOR_ASSIGN Expression { if(objectExpAssign('|', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not BOR assign\n", $<object_val>1.symbol->name); }
     | Expression INC_ASSIGN { if(objectIncAssign(&$<object_val>1, &$$)) YYABORT; }
     | Expression DEC_ASSIGN { if(objectDecAssign(&$<object_val>1, &$$)) YYABORT; }
-    | BNT Expression { if(objectNotBinaryExpression(&$<object_val>1, &$$)) YYABORT; }
+    | BNT Expression { if(objectNotBinaryExpression(&$<object_val>2, &$$)) YYABORT; }
     | NOT Expression { if(objectNotExpression(&$<object_val>2, &$$)) YYABORT; }
     | SUB Expression { if(objectNegExpression(&$<object_val>2, &$$)) YYABORT; }
     | '(' Expression ')' { $$ = $<object_val>2; }
     | '(' VARIABLE_T ')' Expression { if(objectCast($<var_type>2, &$<object_val>4, &$$)) YYABORT; }
+    | FunctionCallStmt
     | ValueStmt
 ;
 

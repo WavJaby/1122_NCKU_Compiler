@@ -11,12 +11,6 @@
 ByteBuffer constantByteBuff = byteBufferInit();
 ByteBuffer methodByteBuff = byteBufferInit();
 
-uint32_t strHash(const char* str) {
-    uint32_t hash = 0, seed = 131;
-    while (*str)
-        hash = hash * seed + (*str++);
-    return hash;
-}
 typedef struct ConstantObject {
     ObjectType type;
     uint64_t value;
