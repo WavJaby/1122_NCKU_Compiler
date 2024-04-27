@@ -5,6 +5,7 @@ func: main
 > Insert `argv` (addr: 0) to scope level 1
 INT_LIT 10
 > Insert `c` (addr: 1) to scope level 1
+FOR
 INT_LIT 0
 > Insert `i` (addr: 2) to scope level 1
 IDENT (name=i, address=2)
@@ -19,6 +20,7 @@ cout string string
 
 > Dump symbol table (scope level: 2)
 Index     Name                Type      Addr      Lineno    Func_sig  
+FOR
 IDENT (name=c, address=1)
 INT_LIT 0
 GEQ

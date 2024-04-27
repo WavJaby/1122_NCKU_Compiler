@@ -17,14 +17,14 @@ extern ObjectType variableIdentType;
 void pushScope();
 void dumpScope();
 
-void functionParmPush(ObjectType variableType, char* variableName, int parmFlag);
-void functionCreate(ObjectType variableType, char* funcName);
+void functionParmPush(ObjectType variableType, bool array, char* variableName, int parmFlag);
+void functionCreate(ObjectType variableType, bool array, char* funcName);
 void functionArgNew();
 void functionArgPush(Object* obj);
 void functionCall(char* funcName, Object* out);
 
 Object* findVariable(char* variableName);
-Object* createVariable(ObjectType variableType, char* variableName, int variableFlag);
+Object* createVariable(ObjectType variableType, bool array, char* variableName, int variableFlag);
 bool objectExpression(char op, Object* a, Object* b, Object* out);
 bool objectExpBinary(char op, Object* a, Object* b, Object* out);
 bool objectExpBoolean(char op, Object* a, Object* b, Object* out);

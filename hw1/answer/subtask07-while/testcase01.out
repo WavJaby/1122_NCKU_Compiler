@@ -9,10 +9,10 @@ INT_LIT 0
 > Insert `b` (addr: 2) to scope level 1
 INT_LIT 10
 > Insert `c` (addr: 3) to scope level 1
+WHILE
 IDENT (name=c, address=3)
 INT_LIT 0
 NEQ
-WHILE
 > Create symbol table (scope level 2)
 IDENT (name=c, address=3)
 INT_LIT 1
@@ -20,6 +20,7 @@ SUB_ASSIGN
 
 > Dump symbol table (scope level: 2)
 Index     Name                Type      Addr      Lineno    Func_sig  
+WHILE
 IDENT (name=a, address=1)
 INT_LIT 0
 EQL
@@ -39,7 +40,6 @@ INT_LIT 0
 EQL
 LOR
 LOR
-WHILE
 > Create symbol table (scope level 2)
 IDENT (name=a, address=1)
 INT_LIT 1

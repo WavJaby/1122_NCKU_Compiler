@@ -94,7 +94,7 @@ FunctionParameterStmt
     | VARIABLE_T IDENT '[' ']' { functionParmPush($<var_type>1, $<s_var>3, VAR_FLAG_ARRAY); } // Array
 ;
 FunctionCallStmt
-    : IDENT { functionArgNew(); } '(' FunctionArgumentStmtList ')' { functionCall($<s_var>2, &$$); }
+    : IDENT { functionArgNew(); } '(' FunctionArgumentStmtList ')' { functionCall($<s_var>1, &$$); }
 ;
 FunctionArgumentStmtList 
     : FunctionArgumentStmtList ',' Expression { functionArgPush(&$<object_val>3); }
@@ -114,13 +114,13 @@ StmtList
 Stmt
     : ScopeStmt
     | ';'
-    | FOR '(' ForVariableStmt ';' { forBegin(); } Expression ';' { forConditionEnd(&$<object_val>6); } Expression ')'
+    | FOR { printf("FOR\n"); } '(' ForInitStmt ';' { forBegin(); } ForConditionStmt ';' { forConditionEnd(&$<object_val>6); } ForUpdationStmt ')'
         { forHeaderEnd(); } ScopeStmt { forEnd(); }
-    | WHILE '(' Expression ')' { printf("WHILE\n"); } ScopeStmt
+    | WHILE { printf("WHILE\n"); } '(' Expression ')' ScopeStmt
     | IfStmt
 
     | COUT { functionArgNew(); } CoutParmListStmt ';' { stdoutPrint(); }
-    | VARIABLE_T { variableIdentType = $<var_type>1; } VariableIdentListStmt ';'
+    | VariableCreateStmt ';'
     | Expression ';'
     | RETURN Expression ';' { printf("RETURN\n"); }
     | BREAK ';' { printf("BREAK\n"); }
@@ -134,18 +134,30 @@ CoutParmListStmt
 ;
 
 /* Create variable */
+VariableCreateStmt
+    : VARIABLE_T { variableIdentType = $<var_type>1; } VariableIdentListStmt
+;
 VariableIdentListStmt
     : VariableIdentListStmt ',' VariableIdentStmt
     | VariableIdentStmt
 ;
 VariableIdentStmt
-    : IDENT VAL_ASSIGN Expression { if(!createVariable(variableIdentType, $<s_var>1, VAR_FLAG_DEFAULT)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); }
-    | IDENT { if(!createVariable(variableIdentType, $<s_var>1, VAR_FLAG_DEFAULT)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); }
+    : IDENT VAL_ASSIGN Expression { if(!createVariable(variableIdentType, false, $<s_var>1, VAR_FLAG_DEFAULT)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); }
+    | IDENT { if(!createVariable(variableIdentType, false, $<s_var>1, VAR_FLAG_DEFAULT)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); }
 ;
 
 /* For Statement */
-ForVariableStmt
-    : VARIABLE_T IDENT VAL_ASSIGN Expression { if(!createVariable($<var_type>1, $<s_var>2, VAR_FLAG_DEFAULT)) yyerrorf("Failed to create variable '%s'\n", $<s_var>2); }
+ForInitStmt
+    : VariableCreateStmt
+    |
+;
+ForConditionStmt
+    : Expression
+    |
+;
+ForUpdationStmt
+    : ForUpdationStmt ',' Expression
+    | Expression
     |
 ;
 
@@ -203,10 +215,10 @@ Expression
 ;
 
 ValueStmt
-    : BOOL_LIT { $$ = (Object){OBJECT_TYPE_BOOL, (*(uint8_t*)&$<b_var>1), NULL}; printf("BOOL_LIT %s\n", $<b_var>1 ? "TRUE" : "FALSE"); }
-    | FLOAT_LIT { $$ = (Object){OBJECT_TYPE_FLOAT, (*(uint32_t*)&$<f_var>1), NULL}; printf("FLOAT_LIT %f\n", $<f_var>1); }
-    | INT_LIT { $$ = (Object){OBJECT_TYPE_INT, (*(uint32_t*)&$<i_var>1), NULL}; printf("INT_LIT %d\n", $<i_var>1); }
-    | STR_LIT { $$ = (Object){OBJECT_TYPE_STR, (*(uint64_t*)&$<s_var>1), NULL}; printf("STR_LIT \"%s\"\n", $<s_var>1); }
+    : BOOL_LIT { $$ = (Object){OBJECT_TYPE_BOOL, (*(uint8_t*)&$<b_var>1), false, NULL}; printf("BOOL_LIT %s\n", $<b_var>1 ? "TRUE" : "FALSE"); }
+    | FLOAT_LIT { $$ = (Object){OBJECT_TYPE_FLOAT, (*(uint32_t*)&$<f_var>1), false, NULL}; printf("FLOAT_LIT %f\n", $<f_var>1); }
+    | INT_LIT { $$ = (Object){OBJECT_TYPE_INT, (*(uint32_t*)&$<i_var>1), false, NULL}; printf("INT_LIT %d\n", $<i_var>1); }
+    | STR_LIT { $$ = (Object){OBJECT_TYPE_STR, (*(uint64_t*)&$<s_var>1), false, NULL}; printf("STR_LIT \"%s\"\n", $<s_var>1); }
     | IDENT { Object* o = findVariable($<s_var>1);
         if(!o) yyerrorf("variable '%s' not declared\n", $<s_var>1);
         $$ = *o;

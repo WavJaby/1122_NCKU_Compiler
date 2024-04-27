@@ -95,39 +95,43 @@ void dumpScope() {
     --scopeLevel;
 }
 
-Object* createVariable(ObjectType variableType, char* variableName, int variableFlag) {
+static inline Object* newObject(ObjectType variableType, bool array, uint64_t value, SymbolData* symbol) {
     Object* obj = malloc(sizeof(Object));
     obj->type = variableType;
-    obj->value = variableFlag;
-    SymbolData* symbol = obj->symbol = malloc(sizeof(SymbolData));
-    symbol->name = (char*)variableName;
-    symbol->index = ((Map*)scopeListStack.last->value)->size;
-    symbol->lineno = yylineno;
-    symbol->addr = variableAddress++;
-    symbol->func_sig = NULL;
-    map_putpp(scopeListStack.last->value, (void*)variableName, obj);
-    printf("> Insert `%s` (addr: %ld) to scope level %u\n", variableName, symbol->addr, scopeLevel);
+    obj->value = value;
+    obj->array = array;
+    obj->symbol = symbol;
     return obj;
 }
 
-void functionParmPush(ObjectType variableType, char* variableName, int variableFlag) {
-    Object* obj = malloc(sizeof(Object));
-    obj->type = variableType;
-    obj->value = variableFlag;
-    SymbolData* symbol = obj->symbol = malloc(sizeof(SymbolData));
-    symbol->name = (char*)variableName;
-    symbol->lineno = yylineno;
-    symbol->addr = variableAddress++;
-    symbol->func_sig = NULL;
+static inline SymbolData* newSymbol(char* name, int32_t index, int64_t addr, int32_t lineno, char* funcSig) {
+    SymbolData* symbol = malloc(sizeof(SymbolData));
+    symbol->name = name;
+    symbol->index = index;
+    symbol->addr = addr;
+    symbol->lineno = lineno;
+    symbol->func_sig = funcSig;
+    return symbol;
+}
 
+Object* createVariable(ObjectType variableType, bool array, char* variableName, int variableFlag) {
+    int index = ((Map*)scopeListStack.last->value)->size;
+    Object* obj = newObject(variableType, array, variableFlag,
+                            newSymbol(variableName, index, yylineno, variableAddress++, NULL));
+    map_putpp(scopeListStack.last->value, (void*)variableName, obj);
+    printf("> Insert `%s` (addr: %ld) to scope level %u\n", variableName, obj->symbol->addr, scopeLevel);
+    return obj;
+}
+
+void functionParmPush(ObjectType variableType, bool array, char* variableName, int variableFlag) {
+    Object* obj = newObject(variableType, array, variableFlag,
+                            newSymbol(variableName, -1, yylineno, variableAddress++, NULL));
     linkedList_addPtr(&funcParm, obj);
 }
 
-void functionCreate(ObjectType returnType, char* funcName) {
+void functionCreate(ObjectType returnType, bool array, char* funcName) {
     printf("func: %s\n", funcName);
-    Object* funcObj = (Object*)malloc(sizeof(Object));
-    funcObj->type = returnType;
-    funcObj->value = 0;
+    Object* funcObj = newObject(returnType, array, 0, NULL);
     int funcIndex = ((Map*)scopeListStack.last->value)->size;
     map_putpp(scopeListStack.last->value, (void*)funcName, funcObj);
     printf("> Insert `%s` (addr: -1) to scope level %u\n", funcName, scopeLevel);
@@ -136,7 +140,7 @@ void functionCreate(ObjectType returnType, char* funcName) {
     char* sig = malloc(64);
     int sigIndex = 1;
     sig[0] = '(';
-    linkedList_foreachPtr(&funcParm, Object*, obj, {
+    linkedList_foreachPtr(&funcParm, Object * obj, {
         SymbolData* symbol = obj->symbol;
         if (obj->type == OBJECT_TYPE_STR) {
             if (obj->value & VAR_FLAG_ARRAY) sig[sigIndex++] = '[';
@@ -155,12 +159,7 @@ void functionCreate(ObjectType returnType, char* funcName) {
     sig = realloc(sig, sigIndex + 1);
     sig[sigIndex] = 0;
     // Create function description
-    SymbolData* symbol = funcObj->symbol = (SymbolData*)malloc(sizeof(SymbolData));
-    symbol->name = funcName;
-    symbol->func_sig = sig;
-    symbol->lineno = funcLineNo;
-    symbol->index = funcIndex;
-    symbol->addr = -1;
+    SymbolData* symbol = funcObj->symbol = newSymbol(funcName, funcIndex, -1, yylineno, sig);
     linkedList_free(&funcParm);
 }
 
@@ -175,6 +174,12 @@ void functionArgPush(Object* obj) {
 }
 
 void functionCall(char* funcName, Object* out) {
+    Object* funcObj = findVariable(funcName);
+    if (!funcObj || !funcObj->symbol) return;
+    SymbolData* symbol = funcObj->symbol;
+
+    printf("call: %s%s\n", funcName, symbol->func_sig);
+
     linkedList_free(funcArgStack.last->value);
     linkedList_removeNode(&funcArgStack, funcArgStack.last);
 }
@@ -359,7 +364,7 @@ bool objectValueAssign(Object* dest, Object* val, Object* out) {
 
 Object* findVariable(char* variableName) {
     Object* variable = NULL;
-    linkedList_foreachPtr(&scopeListStack, Map*, scope, {
+    linkedList_foreachPtr(&scopeListStack, Map * scope, {
         variable = map_get(scope, variableName);
         if (variable)
             break;
@@ -375,7 +380,7 @@ Object* findVariable(char* variableName) {
 void stdoutPrint() {
     LinkedList* funcArgs = funcArgStack.last->value;
     printf("cout");
-    linkedList_foreachPtr(funcArgs, Object*, obj, {
+    linkedList_foreachPtr(funcArgs, Object * obj, {
         printf(" %s", objectTypeName[obj->type]);
     });
     linkedList_free(funcArgs);
@@ -412,7 +417,7 @@ int main(int argc, char* argv[]) {
 
     // Start parsing
     staticVar = map_create(objectInfo);
-    Object endl = {OBJECT_TYPE_STR, 0, &(SymbolData){"endl", 0, -1}};
+    Object endl = {OBJECT_TYPE_STR, false, 0, &(SymbolData){"endl", 0, -1}};
     map_putpp(&staticVar, "endl", &endl);
 
     yyparse();

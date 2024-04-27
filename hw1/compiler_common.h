@@ -28,6 +28,7 @@ typedef struct _symbolData {
 
 typedef struct _object {
     ObjectType type;
+    bool array;
     uint64_t value;
     SymbolData* symbol;
 } Object;
