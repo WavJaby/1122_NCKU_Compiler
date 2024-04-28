@@ -59,10 +59,11 @@ int scopeLevel = -1;
 int funcLineNo = 0;
 int variableAddress = 0;
 
-Map staticVar;                                    // Map<char*, Object*>
-LinkedList scopeListStack = linkedList_create();  // LinkedList<Map<char*, Object*>*>
-LinkedList funcParm = linkedList_create();        // LinkedList<Object*>
-LinkedList funcArgStack = linkedList_create();    // LinkedList<LinkedList<Object*>>
+Map staticVar;                                          // Map<char*, Object*>
+LinkedList scopeListStack = linkedList_create();        // LinkedList<Map<char*, Object*>*>
+LinkedList funcParm = linkedList_create();              // LinkedList<Object*>
+LinkedList funcArgStack = linkedList_create();          // LinkedList<LinkedList<Object*>>
+LinkedList foreachAutoTypeStack = linkedList_create();  // LinkedList<Object*>
 
 void pushScope() {
     printf("> Create symbol table (scope level %d)\n", ++scopeLevel);
@@ -122,12 +123,17 @@ static inline SymbolData* newSymbol(char* name, int32_t index, int64_t addr, int
     return symbol;
 }
 
-Object* createVariable(ObjectType variableType, bool array, char* variableName, int variableFlag) {
+Object* createVariable(ObjectType variableType, bool array, char* variableName, Object* value, int variableFlag) {
     int index = ((Map*)scopeListStack.last->value)->size;
+    if (variableType == OBJECT_TYPE_AUTO && value)
+        variableType = value->type;
     Object* obj = newObject(variableType, array, variableFlag,
                             newSymbol(variableName, index, variableAddress++, yylineno, NULL));
     map_putpp(scopeListStack.last->value, (void*)variableName, obj);
     printf("> Insert `%s` (addr: %ld) to scope level %u\n", variableName, obj->symbol->addr, scopeLevel);
+    // Auto type in for each loop, need assign later
+    if (variableType == OBJECT_TYPE_AUTO && !value)
+        linkedList_addPtr(&foreachAutoTypeStack, obj);
     return obj;
 }
 
@@ -187,6 +193,7 @@ void functionCall(char* funcName, Object* out) {
     SymbolData* symbol = funcObj->symbol;
 
     printf("call: %s%s\n", funcName, symbol->func_sig);
+    out->type = funcObj->type;
 
     linkedList_free(funcArgStack.last->value);
     linkedList_removeNode(&funcArgStack, funcArgStack.last);
@@ -196,6 +203,7 @@ void arrayCreate(Object* out) {
     // LinkedList<Object*>
     LinkedList* elements = (LinkedList*)funcArgStack.last->value;
 
+    printf("create array: %lu\n", elements->length);
     linkedList_free(funcArgStack.last->value);
     linkedList_removeNode(&funcArgStack, funcArgStack.last);
 }
@@ -424,6 +432,20 @@ bool forHeaderEnd() {
 
 bool forEnd() {
     return false;
+}
+
+bool foreachHeaderEnd(Object* obj) {
+    if (foreachAutoTypeStack.length) {
+        linkedList_foreachPtr(&foreachAutoTypeStack, Object * variable, {
+            variable->type = obj->type;
+        });
+    }
+    linkedList_free(&foreachAutoTypeStack);
+}
+
+void returnObject(Object* obj) {
+    // printf("RETURN %s\n", objectTypeName[obj->type]);
+    printf("RETURN\n");
 }
 
 int main(int argc, char* argv[]) {

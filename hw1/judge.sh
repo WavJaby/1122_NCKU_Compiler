@@ -109,7 +109,7 @@ run_test() {
             echo -e "❌$RED $subtask/$testcase No expected output file found$RESET"
         elif [ "$run_only" = false ]; then
             # Compare the output with expected output
-            diff --color -u "$answer_file" "$output_file"
+            diff --color -u --strip-trailing-cr "$answer_file" "$output_file"
             if [ $? -eq 0 ]; then
                 echo -e "✅$GREEN $testcase output matches expected$RESET"
                 return 0

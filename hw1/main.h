@@ -24,7 +24,7 @@ void functionCall(char* funcName, Object* out);
 void arrayCreate(Object* out);
 
 Object* findVariable(char* variableName);
-Object* createVariable(ObjectType variableType, bool array, char* variableName, int variableFlag);
+Object* createVariable(ObjectType variableType, bool array, char* variableName, Object* value, int variableFlag);
 
 // Expressions
 bool objectExpression(char op, Object* a, Object* b, Object* out);
@@ -41,10 +41,12 @@ bool objectValueAssign(Object* dest, Object* val, Object* out);
 bool objectArrayGet(Object* obj, Object* index, Object* out);
 
 void stdoutPrint();
+void returnObject(Object* obj);
 
 bool forInit();
 bool forConditionEnd(Object* result);
 bool forHeaderEnd();
+bool foreachHeaderEnd(Object* obj);
 bool forEnd();
 
 #endif
