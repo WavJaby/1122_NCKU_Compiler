@@ -11,8 +11,6 @@ int yylex_destroy();
 extern ObjectType variableIdentType;
 
 #define VAR_FLAG_DEFAULT 0
-#define VAR_FLAG_ARRAY 0b00000001
-#define VAR_FLAG_POINTER 0b00000010
 
 void pushScope();
 void dumpScope();
@@ -23,8 +21,12 @@ void functionArgNew();
 void functionArgPush(Object* obj);
 void functionCall(char* funcName, Object* out);
 
+void arrayCreate(Object* out);
+
 Object* findVariable(char* variableName);
 Object* createVariable(ObjectType variableType, bool array, char* variableName, int variableFlag);
+
+// Expressions
 bool objectExpression(char op, Object* a, Object* b, Object* out);
 bool objectExpBinary(char op, Object* a, Object* b, Object* out);
 bool objectExpBoolean(char op, Object* a, Object* b, Object* out);
@@ -36,10 +38,11 @@ bool objectDecAssign(Object* a, Object* out);
 bool objectCast(ObjectType variableType, Object* a, Object* out);
 bool objectExpAssign(char op, Object* dest, Object* val, Object* out);
 bool objectValueAssign(Object* dest, Object* val, Object* out);
+bool objectArrayGet(Object* obj, Object* index, Object* out);
 
 void stdoutPrint();
 
-bool forBegin();
+bool forInit();
 bool forConditionEnd(Object* result);
 bool forHeaderEnd();
 bool forEnd();

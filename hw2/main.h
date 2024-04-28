@@ -23,7 +23,7 @@ bool objectValueAssign(Object* dest, Object* val);
 bool objectAddAssign(Object* dest, Object* val);
 bool objectSubAssign(Object* dest, Object* val);
 bool getPointerValue(Object* exp, Object* out);
-bool forBegin();
+bool forInit();
 bool forConditionEnd(Object* result);
 bool forHeaderEnd();
 bool forEnd();

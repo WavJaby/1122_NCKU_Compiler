@@ -37,9 +37,13 @@
 
 /* Nonterminal with return, which need to sepcify type */
 %type <object_val> Expression
+%type <object_val> ExpressionAssign
 %type <object_val> ValueStmt
+%type <object_val> IdentStmt
 %type <object_val> FunctionCallStmt
+%type <b_var> VariableArrayStmt
 
+%left ','
 %right VAL_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN REM_ASSIGN BAN_ASSIGN BOR_ASSIGN BXO_ASSIGN SHR_ASSIGN SHL_ASSIGN
 %left LOR
 %left LAN
@@ -51,8 +55,8 @@
 %left SHL SHR
 %left ADD SUB
 %left MUL DIV REM
-%left NOT BNT ')'
-%left INC_ASSIGN DEC_ASSIGN
+%left NOT BNT '(' ')'
+%left INC_ASSIGN DEC_ASSIGN '[' ']' '{' '}'
 
 /* Yacc will start at this nonterminal */
 %start Program
@@ -81,7 +85,8 @@ DefineVariableStmt
 
 /* Function */
 FunctionDefStmt
-    : VARIABLE_T IDENT { funcLineNo = yylineno; } '(' FunctionParameterStmtList ')' { functionCreate($<var_type>1, $<s_var>2); } '{' StmtList '}' { dumpScope(); }
+    : VARIABLE_T IDENT VariableArrayStmt { funcLineNo = yylineno; } '(' FunctionParameterStmtList ')' 
+        { functionCreate($<var_type>1, $<b_var>3, $<s_var>2); } '{' StmtList '}' { dumpScope(); }
 ;
 FunctionParameterStmtList 
     : FunctionParameterStmtList ',' FunctionParameterStmt
@@ -89,9 +94,7 @@ FunctionParameterStmtList
     | /* Empty function parameter */
 ;
 FunctionParameterStmt
-    : VARIABLE_T IDENT { functionParmPush($<var_type>1, $<s_var>2, VAR_FLAG_DEFAULT); }
-    | VARIABLE_T MUL IDENT { functionParmPush($<var_type>1, $<s_var>3, VAR_FLAG_POINTER); } // Pointer
-    | VARIABLE_T IDENT '[' ']' { functionParmPush($<var_type>1, $<s_var>3, VAR_FLAG_ARRAY); } // Array
+    : VARIABLE_T IDENT VariableArrayStmt { functionParmPush($<var_type>1, $<b_var>3, $<s_var>2, VAR_FLAG_DEFAULT); }
 ;
 FunctionCallStmt
     : IDENT { functionArgNew(); } '(' FunctionArgumentStmtList ')' { functionCall($<s_var>1, &$$); }
@@ -114,14 +117,14 @@ StmtList
 Stmt
     : ScopeStmt
     | ';'
-    | FOR { printf("FOR\n"); } '(' ForInitStmt ';' { forBegin(); } ForConditionStmt ';' { forConditionEnd(&$<object_val>6); } ForUpdationStmt ')'
+    | FOR { printf("FOR\n"); } '(' ForInitStmt ';' { forInit(); } ForConditionStmt ';' { forConditionEnd(&$<object_val>6); } ForUpdationStmt ')'
         { forHeaderEnd(); } ScopeStmt { forEnd(); }
     | WHILE { printf("WHILE\n"); } '(' Expression ')' ScopeStmt
     | IfStmt
 
     | COUT { functionArgNew(); } CoutParmListStmt ';' { stdoutPrint(); }
     | VariableCreateStmt ';'
-    | Expression ';'
+    | ExpressionAssign ';'
     | RETURN Expression ';' { printf("RETURN\n"); }
     | BREAK ';' { printf("BREAK\n"); }
     | CONTINUE ';' { printf("CONTINUE\n"); }
@@ -142,8 +145,15 @@ VariableIdentListStmt
     | VariableIdentStmt
 ;
 VariableIdentStmt
-    : IDENT VAL_ASSIGN Expression { if(!createVariable(variableIdentType, false, $<s_var>1, VAR_FLAG_DEFAULT)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); }
-    | IDENT { if(!createVariable(variableIdentType, false, $<s_var>1, VAR_FLAG_DEFAULT)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); }
+    : IDENT VariableArrayStmt VAL_ASSIGN Expression 
+        { if(!createVariable(variableIdentType, $<b_var>2, $<s_var>1, VAR_FLAG_DEFAULT)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); }
+    | IDENT VariableArrayStmt 
+        { if(!createVariable(variableIdentType, $<b_var>2, $<s_var>1, VAR_FLAG_DEFAULT)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); }
+;
+VariableArrayStmt
+    : { $$ = false; }
+    | '[' ']' { $$ = true; }
+    | '[' Expression ']' { $$ = true; }
 ;
 
 /* For Statement */
@@ -193,18 +203,8 @@ Expression
     | Expression LAN Expression { if(objectExpBoolean('&', &$<object_val>1, &$<object_val>3, &$$)) YYABORT; }     
     | Expression LOR Expression { if(objectExpBoolean('|', &$<object_val>1, &$<object_val>3, &$$)) YYABORT; }     
 
-    | Expression VAL_ASSIGN Expression { if(objectValueAssign(&$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not assign\n", $<object_val>1.symbol->name); }
-    | Expression ADD_ASSIGN Expression { if(objectExpAssign('+', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not ADD assign\n", $<object_val>1.symbol->name); }
-    | Expression SUB_ASSIGN Expression { if(objectExpAssign('-', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not SUB assign\n", $<object_val>1.symbol->name); }
-    | Expression MUL_ASSIGN Expression { if(objectExpAssign('*', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not MUL assign\n", $<object_val>1.symbol->name); }
-    | Expression DIV_ASSIGN Expression { if(objectExpAssign('/', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not DIV assign\n", $<object_val>1.symbol->name); }
-    | Expression REM_ASSIGN Expression { if(objectExpAssign('%', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not REM assign\n", $<object_val>1.symbol->name); }
-    | Expression SHR_ASSIGN Expression { if(objectExpAssign('>', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not SHR assign\n", $<object_val>1.symbol->name); }
-    | Expression SHL_ASSIGN Expression { if(objectExpAssign('<', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not SHL assign\n", $<object_val>1.symbol->name); }
-    | Expression BAN_ASSIGN Expression { if(objectExpAssign('&', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not BAN assign\n", $<object_val>1.symbol->name); }
-    | Expression BOR_ASSIGN Expression { if(objectExpAssign('|', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not BOR assign\n", $<object_val>1.symbol->name); }
-    | Expression INC_ASSIGN { if(objectIncAssign(&$<object_val>1, &$$)) YYABORT; }
-    | Expression DEC_ASSIGN { if(objectDecAssign(&$<object_val>1, &$$)) YYABORT; }
+    | ExpressionAssign
+
     | BNT Expression { if(objectNotBinaryExpression(&$<object_val>2, &$$)) YYABORT; }
     | NOT Expression { if(objectNotExpression(&$<object_val>2, &$$)) YYABORT; }
     | SUB Expression { if(objectNegExpression(&$<object_val>2, &$$)) YYABORT; }
@@ -214,14 +214,40 @@ Expression
     | ValueStmt
 ;
 
+ExpressionAssign
+    : IdentStmt VAL_ASSIGN Expression { if(objectValueAssign(&$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not assign\n", $<object_val>1.symbol->name); }
+    | IdentStmt ADD_ASSIGN Expression { if(objectExpAssign('+', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not ADD assign\n", $<object_val>1.symbol->name); }
+    | IdentStmt SUB_ASSIGN Expression { if(objectExpAssign('-', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not SUB assign\n", $<object_val>1.symbol->name); }
+    | IdentStmt MUL_ASSIGN Expression { if(objectExpAssign('*', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not MUL assign\n", $<object_val>1.symbol->name); }
+    | IdentStmt DIV_ASSIGN Expression { if(objectExpAssign('/', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not DIV assign\n", $<object_val>1.symbol->name); }
+    | IdentStmt REM_ASSIGN Expression { if(objectExpAssign('%', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not REM assign\n", $<object_val>1.symbol->name); }
+    | IdentStmt SHR_ASSIGN Expression { if(objectExpAssign('>', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not SHR assign\n", $<object_val>1.symbol->name); }
+    | IdentStmt SHL_ASSIGN Expression { if(objectExpAssign('<', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not SHL assign\n", $<object_val>1.symbol->name); }
+    | IdentStmt BAN_ASSIGN Expression { if(objectExpAssign('&', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not BAN assign\n", $<object_val>1.symbol->name); }
+    | IdentStmt BOR_ASSIGN Expression { if(objectExpAssign('|', &$<object_val>1, &$<object_val>3, &$$)) yyerrorf("'%s' can not BOR assign\n", $<object_val>1.symbol->name); }
+    | IdentStmt INC_ASSIGN { if(objectIncAssign(&$<object_val>1, &$$)) YYABORT; }
+    | IdentStmt DEC_ASSIGN { if(objectDecAssign(&$<object_val>1, &$$)) YYABORT; }
+;
+
 ValueStmt
     : BOOL_LIT { $$ = (Object){OBJECT_TYPE_BOOL, (*(uint8_t*)&$<b_var>1), false, NULL}; printf("BOOL_LIT %s\n", $<b_var>1 ? "TRUE" : "FALSE"); }
     | FLOAT_LIT { $$ = (Object){OBJECT_TYPE_FLOAT, (*(uint32_t*)&$<f_var>1), false, NULL}; printf("FLOAT_LIT %f\n", $<f_var>1); }
     | INT_LIT { $$ = (Object){OBJECT_TYPE_INT, (*(uint32_t*)&$<i_var>1), false, NULL}; printf("INT_LIT %d\n", $<i_var>1); }
     | STR_LIT { $$ = (Object){OBJECT_TYPE_STR, (*(uint64_t*)&$<s_var>1), false, NULL}; printf("STR_LIT \"%s\"\n", $<s_var>1); }
-    | IDENT { Object* o = findVariable($<s_var>1);
+    | IdentStmt
+    | /*Array*/ { functionArgNew(); } '{' FunctionArgumentStmtList '}' { arrayCreate(&$$); }
+;
+
+IdentStmt
+    : IDENT {
+        Object* o = findVariable($<s_var>1);
         if(!o) yyerrorf("variable '%s' not declared\n", $<s_var>1);
         $$ = *o;
+    }
+    | IDENT '[' Expression ']' {
+        Object* o = findVariable($<s_var>1);
+        if(!o) yyerrorf("variable '%s' not declared\n", $<s_var>1);
+        if(objectArrayGet(o, &$<object_val>3, &$$)) YYABORT; 
     }
 ;
 

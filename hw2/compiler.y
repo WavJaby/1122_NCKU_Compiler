@@ -102,7 +102,7 @@ StmtList
 Stmt
     : ScopeStmt
     | ';'
-    | FOR '(' ForVariableStmt ';' { forBegin(); } Expression ';' { forConditionEnd(&$<object_val>6); } VariableAssignStmt ')'
+    | FOR '(' ForVariableStmt ';' { forInit(); } Expression ';' { forConditionEnd(&$<object_val>6); } VariableAssignStmt ')'
         { forHeaderEnd(); } ScopeStmt { forEnd(); }
     | COUT CoutParameterStmt ';'
     | VariableAssignStmt ';'
