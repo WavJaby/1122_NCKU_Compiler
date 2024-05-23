@@ -5,26 +5,28 @@ LEX_SRC := ./compiler.l
 YAC_SRC := ./compiler.y
 COMMON := ./compiler_common.h
 BUILD := ./build
-BUILD_OUT := out
 COMPILER := compiler
 EXEC := Main
-INPUT_CPP := test.cpp
 
-COMPILER_OUT := ${BUILD}/${BUILD_OUT}/${COMPILER}
+BUILD_OUT := ${BUILD}/out
+COMPILER_OUT := ${BUILD_OUT}/${COMPILER}
 LEX_OUT := ${BUILD}/lex.yy.c
 YAC_OUT := ${BUILD}/y.tab.c
 MAIN_OUT := ${BUILD}/main.o
-JAVA_ASM_OUT := ${BUILD}/Main.j
+
+IN := ./input/subtask01-helloworld/testcase01.cpp
+ASM_OUT := ${BUILD}/out.j
+PGM_OUT := ${BUILD_OUT}/${EXEC}.class
 
 all: build run
 
-build: ${COMPILER}
+build: build_compiler compile_cmm compile_asm
 
 .PHONY: main.c
 
 create_build_folder:
 	mkdir -p ${BUILD}
-	mkdir -p ${BUILD}/${BUILD_OUT}
+	mkdir -p ${BUILD_OUT}
 
 lex.yy.c:
 	$(info ---------- Compile Lex ----------)
@@ -35,28 +37,29 @@ y.tab.c:
 	yacc ${YFLAG} -o ${YAC_OUT} ${YAC_SRC}
 
 main.c:
+	$(info ---------- Compile ${MAIN_SRC} ----------)
 	gcc -g -c ${MAIN_SRC} -o ${MAIN_OUT}
 
-${COMPILER}: create_build_folder lex.yy.c y.tab.c main.c
+build_compiler: create_build_folder lex.yy.c y.tab.c main.c
 	$(info ---------- Create compiler ----------)
 	gcc ${CFLAGS} -o ${COMPILER_OUT} -iquote ./ -iquote ../ ${LEX_OUT} ${YAC_OUT} ${MAIN_OUT}
 
-compile_cpp:
-	$(info ---------- Create java ASM ----------)
-ifeq (,$(wildcard ${COMPILER_OUT}))
-	$(error ${COMPILER_OUT} does not exist.)
-endif
-	./${COMPILER_OUT} ${INPUT_CPP} ${JAVA_ASM_OUT}
+compile_cmm:
+	$(info ---------- Compile c-- to Java ASM ----------)
+	@rm -f ${ASM_OUT}
+	${COMPILER_OUT} ${IN} ${ASM_OUT}
 
-compile_asm: compile_cpp
-	$(info ---------- Compile java ASM ----------)
-ifeq (,$(wildcard ${JAVA_ASM_OUT}))
-	$(error ${JAVA_ASM_OUT} does not exist.)
-endif
-	@java -jar jasmin.jar -g ${JAVA_ASM_OUT}
+compile_asm:
+	$(info ---------- Compile Java ASM to Java bytecode ----------)
+	@test -f "${ASM_OUT}" || (echo "\"${ASM_OUT}\" does not exist."; exit 1)
+	@rm -f ${PGM_OUT}
+	@java -jar jasmin.jar -g ${ASM_OUT} -d ${BUILD_OUT}
 
 run:
-	@java ${EXEC}
+	$(info ---------- Run program ----------)
+	@test -f "${PGM_OUT}" || (echo "\"${PGM_OUT}\" does not exist."; exit 1)
+
+	@cd ${BUILD_OUT} && java ${EXEC}
 
 clean:
 	rm -rf ${BUILD}

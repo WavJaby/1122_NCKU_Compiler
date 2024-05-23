@@ -13,23 +13,23 @@ INT_LIT 243
 BNT
 INT_LIT 15
 BAN
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=b, address=2)
 IDENT (name=a, address=1)
 INT_LIT 1
 SHR
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=c, address=3)
 IDENT (name=a, address=1)
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=d, address=4)
 IDENT (name=b, address=2)
 INT_LIT 9
 BOR
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=e, address=5)
 IDENT (name=b, address=2)
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=a, address=1)
 IDENT (name=a, address=1)
 ADD_ASSIGN
@@ -54,7 +54,7 @@ IDENT (name=e, address=5)
 INT_LIT 100
 INT_LIT 255
 BXO
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=e, address=5)
 INT_LIT 2
 SHL_ASSIGN

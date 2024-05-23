@@ -14,13 +14,13 @@ IDENT (name=x, address=1)
 IDENT (name=y, address=2)
 Cast to int
 ADD
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=z2, address=4)
 IDENT (name=x, address=1)
 Cast to float
 IDENT (name=y, address=2)
 ADD
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=z1, address=3)
 STR_LIT " "
 IDENT (name=z2, address=4)
@@ -31,13 +31,13 @@ IDENT (name=x, address=1)
 FLOAT_LIT 6.280000
 Cast to int
 ADD
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=z2, address=4)
 INT_LIT 6
 Cast to float
 IDENT (name=y, address=2)
 ADD
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=z1, address=3)
 IDENT (name=endl, address=-1)
 cout int string

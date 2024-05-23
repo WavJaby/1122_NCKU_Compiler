@@ -33,11 +33,11 @@ create array: 0
 INT_LIT 3
 IDENT (name=b, address=2)
 INT_LIT 9
-EQL_ASSIGN
+VAL_ASSIGN
 INT_LIT 1000
 IDENT (name=b, address=2)
 INT_LIT 1000
-EQL_ASSIGN
+VAL_ASSIGN
 INT_LIT 3
 IDENT (name=b, address=2)
 STR_LIT " "

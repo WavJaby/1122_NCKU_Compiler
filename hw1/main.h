@@ -31,7 +31,7 @@ bool objectExpression(char op, Object* a, Object* b, Object* out);
 bool objectExpBinary(char op, Object* a, Object* b, Object* out);
 bool objectExpBoolean(char op, Object* a, Object* b, Object* out);
 bool objectNotBinaryExpression(Object* a, Object* out);
-bool objectNotExpression(Object* a, Object* out);
+bool objectNotBooleanExpression(Object* a, Object* out);
 bool objectNegExpression(Object* a, Object* out);
 bool objectIncAssign(Object* a, Object* out);
 bool objectDecAssign(Object* a, Object* out);

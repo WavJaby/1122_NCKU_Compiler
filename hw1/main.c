@@ -318,7 +318,7 @@ bool objectNegExpression(Object* a, Object* out) {
     return false;
 }
 
-bool objectNotExpression(Object* a, Object* out) {
+bool objectNotBooleanExpression(Object* a, Object* out) {
     printf("NOT\n");
     out->type = OBJECT_TYPE_BOOL;
     return false;
@@ -387,18 +387,23 @@ bool objectExpAssign(char op, Object* dest, Object* val, Object* out) {
 }
 
 bool objectValueAssign(Object* dest, Object* val, Object* out) {
-    printf("EQL_ASSIGN\n");
+    printf("VAL_ASSIGN\n");
     out->type = dest->type;
     return false;
 }
 
 Object* findVariable(char* variableName) {
     Object* variable = NULL;
-    linkedList_foreachPtr(&scopeListStack, Map * scope, {
+
+    LinkedListNode* node = scopeListStack.last;
+    Map* scope = NULL;
+    while (node) {
+        scope = node->value;
         variable = map_get(scope, variableName);
         if (variable)
             break;
-    });
+        node = node->previous;
+    }
     if (!variable)
         variable = (Object*)map_get(&staticVar, (void*)variableName);
     if (!variable)
@@ -460,7 +465,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Start parsing
-    staticVar = map_create(objectInfo);
+    staticVar = (Map)map_create(objectInfo);
     Object endl = {OBJECT_TYPE_STR, false, 0, &(SymbolData){"endl", 0, -1}};
     map_putpp(&staticVar, "endl", &endl);
 

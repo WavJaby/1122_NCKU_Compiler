@@ -10,7 +10,7 @@ IDENT (name=endl, address=-1)
 cout int string
 IDENT (name=x, address=1)
 INT_LIT 10
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=x, address=1)
 IDENT (name=endl, address=-1)
 cout int string
@@ -63,7 +63,7 @@ IDENT (name=endl, address=-1)
 cout float string
 IDENT (name=yy, address=2)
 FLOAT_LIT 10.400000
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=yy, address=2)
 IDENT (name=endl, address=-1)
 cout float string
@@ -98,7 +98,7 @@ IDENT (name=endl, address=-1)
 cout string string
 IDENT (name=s, address=3)
 STR_LIT "Hello"
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=s, address=3)
 IDENT (name=endl, address=-1)
 cout string string
@@ -109,7 +109,7 @@ IDENT (name=endl, address=-1)
 cout bool string
 IDENT (name=bbb, address=4)
 BOOL_LIT TRUE
-EQL_ASSIGN
+VAL_ASSIGN
 IDENT (name=bbb, address=4)
 IDENT (name=endl, address=-1)
 cout bool string

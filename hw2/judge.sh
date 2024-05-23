@@ -81,9 +81,7 @@ run_test() {
     local output_file="$result_dir/$subtask/$testcase.out"
 
     # Compile the testcase
-    make compile_asm INPUT_CPP="$input_dir/$subtask/$testcase.cpp"
-
-    make run > "$output_file"
+    $compiler "$input_dir/$subtask/$testcase.cpp" "$output_file"
 
     if [ $? -eq 0 ]; then
         # Check if expected output file exists

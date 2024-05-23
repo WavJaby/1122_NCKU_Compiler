@@ -37,6 +37,7 @@
 
 /* Nonterminal with return, which need to sepcify type */
 %type <obj_val> Expression
+%type <obj_val> ExpressionValue
 %type <obj_val> ExpressionAssign
 %type <obj_val> ValueStmt
 %type <obj_val> IdentStmt
@@ -55,11 +56,11 @@
 %left SHL SHR
 %left ADD SUB
 %left MUL DIV REM
-%left NOT BNT '(' ')'
+%right NOT BNT '(' ')'
 %left INC_ASSIGN DEC_ASSIGN '[' ']' '{' '}'
 
-%nonassoc IFX
-%nonassoc ELSE
+/* %nonassoc IFX
+%nonassoc ELSE */
 
 /* Yacc will start at this nonterminal */
 %start Program
@@ -216,11 +217,15 @@ Expression
 
     | ExpressionAssign
 
-    | BNT Expression { if(objectNotBinaryExpression(&$<obj_val>2, &$$)) YYABORT; }
-    | NOT Expression { if(objectNotExpression(&$<obj_val>2, &$$)) YYABORT; }
-    | SUB Expression { if(objectNegExpression(&$<obj_val>2, &$$)) YYABORT; }
-    | '(' Expression ')' { $$ = $<obj_val>2; }
+    | ExpressionValue
     | '(' VARIABLE_T ')' Expression { if(objectCast($<var_type>2, &$<obj_val>4, &$$)) YYABORT; }
+;
+
+ExpressionValue
+    : BNT ExpressionValue { if(objectNotBinaryExpression(&$<obj_val>2, &$$)) YYABORT; }
+    | NOT ExpressionValue { if(objectNotBooleanExpression(&$<obj_val>2, &$$)) YYABORT; }
+    | SUB ExpressionValue { if(objectNegExpression(&$<obj_val>2, &$$)) YYABORT; }
+    | '(' Expression ')' { $$ = $<obj_val>2; }
     | FunctionCallStmt
     | ValueStmt
 ;
@@ -236,15 +241,16 @@ ExpressionAssign
     | IdentStmt SHL_ASSIGN Expression { if(objectExpAssign('<', &$<obj_val>1, &$<obj_val>3, &$$)) yyerrorf("'%s' can not SHL assign\n", $<obj_val>1.symbol->name); }
     | IdentStmt BAN_ASSIGN Expression { if(objectExpAssign('&', &$<obj_val>1, &$<obj_val>3, &$$)) yyerrorf("'%s' can not BAN assign\n", $<obj_val>1.symbol->name); }
     | IdentStmt BOR_ASSIGN Expression { if(objectExpAssign('|', &$<obj_val>1, &$<obj_val>3, &$$)) yyerrorf("'%s' can not BOR assign\n", $<obj_val>1.symbol->name); }
+    | IdentStmt BXO_ASSIGN Expression { if(objectExpAssign('^', &$<obj_val>1, &$<obj_val>3, &$$)) yyerrorf("'%s' can not BXO assign\n", $<obj_val>1.symbol->name); }
     | IdentStmt INC_ASSIGN { if(objectIncAssign(&$<obj_val>1, &$$)) YYABORT; }
     | IdentStmt DEC_ASSIGN { if(objectDecAssign(&$<obj_val>1, &$$)) YYABORT; }
 ;
 
 ValueStmt
-    : BOOL_LIT { $$ = (Object){OBJECT_TYPE_BOOL, (*(uint8_t*)&$<b_var>1), false, NULL}; printf("BOOL_LIT %s\n", $<b_var>1 ? "TRUE" : "FALSE"); }
-    | FLOAT_LIT { $$ = (Object){OBJECT_TYPE_FLOAT, (*(uint32_t*)&$<f_var>1), false, NULL}; printf("FLOAT_LIT %f\n", $<f_var>1); }
-    | INT_LIT { $$ = (Object){OBJECT_TYPE_INT, (*(uint32_t*)&$<i_var>1), false, NULL}; printf("INT_LIT %d\n", $<i_var>1); }
-    | STR_LIT { $$ = (Object){OBJECT_TYPE_STR, (*(uint64_t*)&$<s_var>1), false, NULL}; printf("STR_LIT \"%s\"\n", $<s_var>1); }
+    : BOOL_LIT { $$ = (Object){OBJECT_TYPE_BOOL, false, (*(uint8_t*)&$<b_var>1), NULL}; printf("BOOL_LIT %s\n", $<b_var>1 ? "TRUE" : "FALSE"); }
+    | FLOAT_LIT { $$ = (Object){OBJECT_TYPE_FLOAT, false, (*(uint32_t*)&$<f_var>1), NULL}; printf("FLOAT_LIT %f\n", $<f_var>1); }
+    | INT_LIT { $$ = (Object){OBJECT_TYPE_INT, false, (*(uint32_t*)&$<i_var>1), NULL}; printf("INT_LIT %d\n", $<i_var>1); }
+    | STR_LIT { $$ = (Object){OBJECT_TYPE_STR, false, (*(uint64_t*)&$<s_var>1), NULL}; printf("STR_LIT \"%s\"\n", $<s_var>1); }
     | /*Array*/ { functionArgNew(); } '{' FunctionArgumentStmtList '}' { arrayCreate(&$$); }
     | IdentStmt
 ;

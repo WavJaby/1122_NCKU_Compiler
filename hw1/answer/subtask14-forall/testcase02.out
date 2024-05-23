@@ -34,7 +34,7 @@ INT_LIT 998244353
 ADD
 INT_LIT 82781
 REM
-EQL_ASSIGN
+VAL_ASSIGN
 
 > Dump symbol table (scope level: 3)
 Index     Name                Type      Addr      Lineno    Func_sig  

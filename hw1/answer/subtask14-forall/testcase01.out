@@ -11,18 +11,18 @@ IF
 IDENT (name=num, address=0)
 IDENT (name=num, address=0)
 INT_LIT 1
-IDENT (name=mod, address=-1)
-DIV
 NEG
 MUL
+IDENT (name=mod, address=1)
+DIV
 INT_LIT 1
 ADD
-IDENT (name=mod, address=-1)
+IDENT (name=mod, address=1)
 MUL
 ADD
 RETURN
 IDENT (name=num, address=0)
-IDENT (name=mod, address=-1)
+IDENT (name=mod, address=1)
 REM
 RETURN
 
