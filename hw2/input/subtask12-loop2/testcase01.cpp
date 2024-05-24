@@ -1,14 +1,14 @@
 int main(string argv[]) {
     int counter = 0;
 
-    while( counter < 100000 ) {
+    while( counter < 100 ) {
         counter += 1;
-        if( counter == 99999 ) {
+        if( counter == 99 ) {
             break;
         }
 
-        if( counter % 91 == 0 ) {
-            cout << "Hello World " << counter % 91 << endl;
+        if( counter % 9 == 0 ) {
+            cout << "Hello World " << counter % 2 << endl;
         }
 
         cout << 998244353 % counter << endl;

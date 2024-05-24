@@ -15,12 +15,12 @@ YAC_OUT := ${BUILD}/y.tab.c
 MAIN_OUT := ${BUILD}/main.o
 
 IN := ./input/subtask01-helloworld/testcase01.cpp
-ASM_OUT := ${BUILD}/out.j
+ASM_OUT := ${BUILD}/Main.j
 PGM_OUT := ${BUILD_OUT}/${EXEC}.class
 
-all: build run
+all: build compile_asm run
 
-build: build_compiler compile_cmm compile_asm
+build: build_compiler
 
 .PHONY: main.c
 
@@ -49,7 +49,7 @@ compile_cmm:
 	@rm -f ${ASM_OUT}
 	${COMPILER_OUT} ${IN} ${ASM_OUT}
 
-compile_asm:
+compile_asm: compile_cmm
 	$(info ---------- Compile Java ASM to Java bytecode ----------)
 	@test -f "${ASM_OUT}" || (echo "\"${ASM_OUT}\" does not exist."; exit 1)
 	@rm -f ${PGM_OUT}

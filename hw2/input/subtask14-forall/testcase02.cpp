@@ -12,7 +12,7 @@ int main(string argv[]) {
     {
         for(int j=0;j<3;j++)
         {
-            cout << a[i][j] << endl;
+            cout << i << ' ' << j << ' ' << a[i][j] << endl;
         }
     }
 

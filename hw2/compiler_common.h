@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "../../WJCL/list/wjcl_linked_list.h"
+
 #define getBool(val) (*(int8_t*)&((val)->value))
 #define getByte(val) (*(int8_t*)&((val)->value))
 #define getChar(val) (*(int8_t*)&((val)->value))
@@ -41,10 +43,11 @@ typedef struct _symbolData {
 
 typedef struct _object {
     ObjectType type;
-    bool array;
+    uint32_t array;
     uint64_t value;
     uint8_t flag;
     SymbolData* symbol;
+    LinkedList* arraySubscript;
 } Object;
 
 extern int yylineno;

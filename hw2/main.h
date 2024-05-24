@@ -19,19 +19,26 @@ extern ObjectType variableIdentType;
 
 #define VAR_FLAG_IN_STACK 0b00000001
 
-void pushScope(Object* obj);
+void pushScope();
 void dumpScope();
 
-void functionParmPush(ObjectType variableType, bool array, char* variableName, int parmFlag);
-void functionCreate(ObjectType variableType, bool array, char* funcName);
-void functionArgNew();
+Object* findVariable(char* variableName);
+bool initVariable(ObjectType variableType, LinkedList* arraySubscripts, char* variableName);
+Object* createVariable(ObjectType variableType, LinkedList* arraySubscripts, char* variableName, Object* value);
+
+void functionLocalsBegin();
+void functionParmPush(ObjectType variableType, LinkedList* arraySubscripts, char* variableName);
+void functionBegin(ObjectType returnType, LinkedList* arraySubscripts, char* funcName);
+bool functionEnd(ObjectType returnType);
+
+bool returnObject(Object* obj);
+bool breakLoop();
+
+void functionArgsBegin();
 void functionArgPush(Object* obj);
 void functionCall(char* funcName, Object* out);
 
-void arrayCreate(Object* out);
-
-Object* findVariable(char* variableName);
-Object* createVariable(ObjectType variableType, bool array, char* variableName, Object* value, int variableFlag);
+bool stdoutPrint(Object* obj);
 
 // Expressions
 bool objectExpression(char op, Object* a, Object* b, Object* out);
@@ -45,15 +52,28 @@ bool objectDecAssign(Object* a, Object* out);
 bool objectCast(ObjectType variableType, Object* a, Object* out);
 bool objectExpAssign(char op, Object* dest, Object* val, Object* out);
 bool objectValueAssign(Object* dest, Object* val, Object* out);
-bool objectArrayGet(Object* obj, Object* index, Object* out);
 
-void stdoutPrint();
-void returnObject(Object* obj);
+bool ifBegin(Object* a);
+bool ifEnd();
+bool ifOnlyEnd();
+bool elseBegin();
+bool elseEnd();
 
-bool forInit();
+bool whileBegin();
+bool whileBodyBegin();
+bool whileEnd();
+
+bool forBegin();
+bool forInitEnd();
 bool forConditionEnd(Object* result);
 bool forHeaderEnd();
 bool foreachHeaderEnd(Object* obj);
 bool forEnd();
+
+bool arrayCreate(Object* out);
+bool objectArrayGet(Object* arr, LinkedList* arraySubscripts, Object* out);
+LinkedList* arraySubscriptBegin(Object* index);
+bool arraySubscriptPush(LinkedList* arraySubscripts, Object* index);
+bool arraySubscriptEnd(LinkedList* arraySubscripts);
 
 #endif

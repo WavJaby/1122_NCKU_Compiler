@@ -101,22 +101,22 @@
     break;
 
 #define valueAssignFloatOp(op, out, a) \
-    switch (op) {                 \
-    case '+':                     \
-        out += a;                 \
-        break;                    \
-    case '-':                     \
-        out -= a;                 \
-        break;                    \
-    case '*':                     \
-        out *= a;                 \
-        break;                    \
-    case '/':                     \
-        out /= a;                 \
-        break;                    \
-    default:                      \
-        return true;              \
-    }                             \
+    switch (op) {                      \
+    case '+':                          \
+        out += a;                      \
+        break;                         \
+    case '-':                          \
+        out -= a;                      \
+        break;                         \
+    case '*':                          \
+        out *= a;                      \
+        break;                         \
+    case '/':                          \
+        out /= a;                      \
+        break;                         \
+    default:                           \
+        return true;                   \
+    }                                  \
     break;
 
 #define valueBooleanCmp(op, out, a, b) \
@@ -207,6 +207,7 @@
 
 #define swBinary(op, b_val, s_val, i_val, l_val, a, b) \
     switch (b->type) {                                 \
+    case OBJECT_TYPE_BOOL:                             \
     case OBJECT_TYPE_BYTE:                             \
     case OBJECT_TYPE_CHAR:                             \
         valueBinaryOp(op, b_val, a, getByte(b));       \
@@ -290,6 +291,7 @@ bool valueOperation(char op, Object* a, Object* b, Object* out) {
     }
 
     switch (out->type) {
+    case OBJECT_TYPE_BOOL:
     case OBJECT_TYPE_BYTE:
     case OBJECT_TYPE_CHAR:
         out->value = asVal(b_val);
@@ -309,7 +311,7 @@ bool valueOperation(char op, Object* a, Object* b, Object* out) {
         break;
     case OBJECT_TYPE_FLOAT:
         out->value = asVal(f_val);
-        printf("%%f=%.7f\n", f_val);
+        printf("%%f=%.6f\n", f_val);
         break;
     case OBJECT_TYPE_DOUBLE:
         out->value = asVal(d_val);
@@ -322,18 +324,20 @@ bool valueOperation(char op, Object* a, Object* b, Object* out) {
 }
 
 bool binaryOperation(char op, Object* a, Object* b, Object* out) {
-    out->symbol = NULL;
-    out->flag = 0;
-
     uint8_t aPri = objectTypePriority[a->type], bPri = objectTypePriority[b->type];
     if (aPri < bPri) out->type = b->type;
     else out->type = a->type;
+
+    out->symbol = NULL;
+    out->flag = 0;
+    out->array = 0;
 
     int8_t b_val;
     int16_t s_val;
     int32_t i_val;
     int64_t l_val;
     switch (a->type) {
+    case OBJECT_TYPE_BOOL:
     case OBJECT_TYPE_BYTE:
     case OBJECT_TYPE_CHAR:
         swBinary(op, b_val, s_val, i_val, l_val, getByte(a), b);
@@ -348,6 +352,7 @@ bool binaryOperation(char op, Object* a, Object* b, Object* out) {
     }
 
     switch (out->type) {
+    case OBJECT_TYPE_BOOL:
     case OBJECT_TYPE_BYTE:
     case OBJECT_TYPE_CHAR:
         out->value = asVal(b_val);
@@ -375,6 +380,7 @@ bool booleanOperation(char op, Object* a, Object* b, Object* out) {
     out->symbol = NULL;
     out->flag = 0;
     out->type = OBJECT_TYPE_BOOL;
+    out->array = 0;
 
     bool b_val;
     switch (a->type) {
@@ -401,5 +407,95 @@ bool booleanOperation(char op, Object* a, Object* b, Object* out) {
     printf("%%b=%s\n", b_val ? "true" : "false");
     out->value = asVal(b_val);
 
+    return false;
+}
+
+bool valueOperationNeg(Object* a, Object* out) {
+    out->symbol = NULL;
+    out->flag = 0;
+    out->type = a->type;
+    out->array = 0;
+
+    int8_t b_val;
+    int16_t s_val;
+    int32_t i_val;
+    int64_t l_val;
+    float f_val;
+    double d_val;
+    switch (out->type) {
+    case OBJECT_TYPE_BOOL:
+    case OBJECT_TYPE_BYTE:
+    case OBJECT_TYPE_CHAR:
+        b_val = -getByte(a);
+        out->value = asVal(b_val);
+        printf("%%b=%d\n", b_val);
+        break;
+    case OBJECT_TYPE_SHORT:
+        s_val = -getShort(a);
+        out->value = asVal(s_val);
+        printf("%%s=%d\n", s_val);
+        break;
+    case OBJECT_TYPE_INT:
+        i_val = -getInt(a);
+        out->value = asVal(i_val);
+        printf("%%i=%d\n", i_val);
+        break;
+    case OBJECT_TYPE_LONG:
+        l_val = -getLong(a);
+        out->value = asVal(l_val);
+        printf("%%l=%ld\n", l_val);
+        break;
+    case OBJECT_TYPE_FLOAT:
+        f_val = -getFloat(a);
+        out->value = asVal(f_val);
+        printf("%%f=%.7f\n", f_val);
+        break;
+    case OBJECT_TYPE_DOUBLE:
+        d_val = -getDouble(a);
+        out->value = asVal(d_val);
+        printf("%%d=%lf\n", d_val);
+        break;
+    default:
+        return true;
+    }
+    return false;
+}
+
+bool valueOperationBinaryNot(Object* a, Object* out) {
+    out->symbol = NULL;
+    out->flag = 0;
+    out->type = a->type;
+    out->array = 0;
+    
+    int8_t b_val;
+    int16_t s_val;
+    int32_t i_val;
+    int64_t l_val;
+    switch (out->type) {
+    case OBJECT_TYPE_BOOL:
+    case OBJECT_TYPE_BYTE:
+    case OBJECT_TYPE_CHAR:
+        b_val = ~getByte(a);
+        out->value = asVal(b_val);
+        printf("%%b=%d\n", b_val);
+        break;
+    case OBJECT_TYPE_SHORT:
+        s_val = ~getShort(a);
+        out->value = asVal(s_val);
+        printf("%%s=%d\n", s_val);
+        break;
+    case OBJECT_TYPE_INT:
+        i_val = ~getInt(a);
+        out->value = asVal(i_val);
+        printf("%%i=%d\n", i_val);
+        break;
+    case OBJECT_TYPE_LONG:
+        l_val = ~getLong(a);
+        out->value = asVal(l_val);
+        printf("%%l=%ld\n", l_val);
+        break;
+    default:
+        return true;
+    }
     return false;
 }

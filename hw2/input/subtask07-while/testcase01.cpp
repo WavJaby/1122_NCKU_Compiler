@@ -10,5 +10,7 @@ int main(string argv[]) {
         c -= 1;
     }
 
+    cout << a << ' ' << b << ' ' << c << endl;
+
     return 0;
 }

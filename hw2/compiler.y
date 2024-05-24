@@ -1,6 +1,5 @@
 /* Definition section */
 %{
-    #include "compiler_common.h"
     #include "compiler_util.h"
     #include "main.h"
 
@@ -22,6 +21,9 @@
     char *s_var;
 
     Object obj_val;
+
+    // LinkList<Object*>
+    LinkedList* array_subscript;
 }
 
 /* Token without return */
@@ -48,7 +50,8 @@
 %type <obj_val> ValueStmt
 %type <obj_val> IdentStmt
 %type <obj_val> FunctionCallStmt
-%type <b_var> VariableArrayStmt
+%type <array_subscript> ArraySubscriptStmtList
+%type <array_subscript> VariableArrayStmt
 
 %left ','
 %right VAL_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN REM_ASSIGN BAN_ASSIGN BOR_ASSIGN BXO_ASSIGN SHR_ASSIGN SHL_ASSIGN
@@ -65,8 +68,8 @@
 %right NOT BNT '(' ')'
 %left INC_ASSIGN DEC_ASSIGN '[' ']' '{' '}'
 
-/* %nonassoc IFX
-%nonassoc ELSE */
+%nonassoc THEN
+%nonassoc ELSE
 
 /* Yacc will start at this nonterminal */
 %start Program
@@ -75,7 +78,7 @@
 /* Grammar section */
 
 Program
-    : { pushScope(NULL); } GlobalStmtList { dumpScope(); }
+    : { pushScope(); } GlobalStmtList { dumpScope(); }
     | /* Empty file */
 ;
 
@@ -95,19 +98,19 @@ DefineVariableStmt
 
 /* Function */
 FunctionDefStmt
-    : VARIABLE_T IDENT VariableArrayStmt { funcLineNo = yylineno; } '(' FunctionParameterStmtList ')' 
-        { functionCreate($<var_type>1, $<b_var>3, $<s_var>2); } '{' StmtList '}' { dumpScope(); }
+    : VARIABLE_T IDENT VariableArrayStmt { functionLocalsBegin(); } '(' FunctionParameterStmtList ')' 
+        { functionBegin($<var_type>1, $<array_subscript>3, $<s_var>2); } '{' StmtList '}' { if(functionEnd($<var_type>1)) yyerrorf("Function '%s' must return \n", $<s_var>2); }
 ;
-FunctionParameterStmtList 
+FunctionParameterStmtList
     : FunctionParameterStmtList ',' FunctionParameterStmt
     | FunctionParameterStmt
     | /* Empty function parameter */
 ;
 FunctionParameterStmt
-    : VARIABLE_T IDENT VariableArrayStmt { functionParmPush($<var_type>1, $<b_var>3, $<s_var>2, 0); }
+    : VARIABLE_T IDENT VariableArrayStmt { functionParmPush($<var_type>1, $<array_subscript>3, $<s_var>2); }
 ;
 FunctionCallStmt
-    : IDENT { functionArgNew(); } '(' FunctionArgumentStmtList ')' { functionCall($<s_var>1, &$$); }
+    : IDENT { functionArgsBegin(); } '(' FunctionArgumentStmtList ')' { functionCall($<s_var>1, &$$); }
 ;
 FunctionArgumentStmtList 
     : FunctionArgumentStmtList ',' Expression { functionArgPush(&$<obj_val>3); }
@@ -117,38 +120,39 @@ FunctionArgumentStmtList
 
 /* Scope */
 ScopeStmt
-    : '{' { pushScope(NULL); } StmtList '}' { dumpScope(); }
-    | '{' { pushScope(NULL); } '}' { dumpScope(); }
+    : '{' { pushScope(); } StmtList '}' { dumpScope(); }
+    | '{' { pushScope(); } '}' { dumpScope(); }
+    | BodyStmt
 ;
 ManualScopeStmt
     : '{' StmtList '}'
     | '{' '}'
+    | BodyStmt
 ;
 StmtList 
-    : StmtList Stmt
-    | Stmt
+    : StmtList ScopeStmt
+    | ScopeStmt
 ;
-Stmt
-    : ScopeStmt
-    | ';'
-    | FOR { printf("FOR\n"); pushScope(NULL); } '(' ForHeaderStmt ')' ManualScopeStmt { dumpScope(); forEnd(); }
-    | WHILE { printf("WHILE\n"); } '(' Expression ')' Stmt
+BodyStmt
+    : ';'
+    | FOR { forBegin(); } '(' ForHeaderStmt ')' ManualScopeStmt { forEnd(); }
+    | WHILE { whileBegin(); } '(' Expression ')' { whileBodyBegin(); } ScopeStmt { whileEnd(); }
     | IfStmt
 
     | VariableCreateStmt ';'
     | ExpressionAssign ';'
     | FunctionCallStmt ';'
-    | COUT { functionArgNew(); } CoutParmListStmt ';' { stdoutPrint(); }
+    | COUT CoutParmListStmt ';'
     | RETURN Expression ';' { returnObject(&$<obj_val>2); }
     | RETURN ';' { returnObject(NULL); }
-    | BREAK ';' { printf("BREAK\n"); }
+    | BREAK ';' { breakLoop(); }
     | CONTINUE ';' { printf("CONTINUE\n"); }
 ;
 
 /* Cout */
 CoutParmListStmt
-    : CoutParmListStmt SHL Expression { functionArgPush(&$<obj_val>3); }
-    | SHL Expression { functionArgPush(&$<obj_val>2); }
+    : CoutParmListStmt SHL Expression { stdoutPrint(&$<obj_val>3); }
+    | SHL Expression { stdoutPrint(&$<obj_val>2); }
 ;
 
 /* Create variable */
@@ -160,21 +164,24 @@ VariableIdentListStmt
     | VariableIdentStmt
 ;
 VariableIdentStmt
-    : IDENT VariableArrayStmt VAL_ASSIGN Expression 
-        { if(!createVariable(variableIdentType, $<b_var>2, $<s_var>1, &$<obj_val>4, 0)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); }
+    : IDENT VariableArrayStmt { if(initVariable(variableIdentType, $<array_subscript>2, $<s_var>1)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); } VAL_ASSIGN Expression 
+        { if(!createVariable(variableIdentType, $<array_subscript>2, $<s_var>1, &$<obj_val>5)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); }
     | IDENT VariableArrayStmt 
-        { if(!createVariable(variableIdentType, $<b_var>2, $<s_var>1, NULL, 0)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); }
+        { if(initVariable(variableIdentType, $<array_subscript>2, $<s_var>1) || !createVariable(variableIdentType, $<array_subscript>2, $<s_var>1, NULL)) yyerrorf("Failed to create variable '%s'\n", $<s_var>1); }
 ;
 VariableArrayStmt
-    : { $$ = false; }
-    | '[' ']' { $$ = true; }
-    | VariableArraySubscriptStmtList { $$ = true; }
+    : { $$ = NULL; }
+    | '[' ']' { $$ = arraySubscriptBegin(NULL); }
+    | ArraySubscriptStmtList
 ;
 
 /* For Statement */
 ForHeaderStmt
-    : ForInitStmt ';' { forInit(); } ForConditionStmt ';' { forConditionEnd(NULL); } ForUpdationStmt { forHeaderEnd(); }
-    | VariableCreateStmt { forInit(); } ':' Expression { foreachHeaderEnd(&$<obj_val>4); }
+    : ForInitStmt ';' 
+        { forInitEnd(); } ForConditionStmt ';' 
+        { forConditionEnd(NULL); } ForUpdationStmt { forHeaderEnd(); }
+    | VariableCreateStmt { forInitEnd(); } ':' 
+        Expression { foreachHeaderEnd(&$<obj_val>4); }
 ;
 ForInitStmt
     : VariableCreateStmt
@@ -191,12 +198,12 @@ ForUpdationStmt
 ;
 
 /* If Statement */
-IfStmt
-    : IF '(' Expression ')' { printf("IF\n"); } Stmt ElseStmt
+IfHeader
+    : IF '(' Expression ')' { ifBegin(&$<obj_val>3); } ScopeStmt
 ;
-ElseStmt
-    : 
-    | ELSE { printf("ELSE\n"); } Stmt
+IfStmt
+    : IfHeader %prec THEN { ifOnlyEnd(); }
+    | IfHeader ELSE { elseBegin(); } ScopeStmt { elseEnd(); }
 ;
 
 Expression
@@ -254,12 +261,12 @@ ExpressionAssign
 
 ValueStmt
     : BOOL_LIT { $$ = (Object){OBJECT_TYPE_BOOL, false, (*(uint64_t*)&$<b_var>1), 0, NULL}; printf("BOOL_LIT %s\n", $<b_var>1 ? "TRUE" : "FALSE"); }
-    | FLOAT_LIT { $$ = (Object){OBJECT_TYPE_FLOAT, false, (*(uint64_t*)&$<f_var>1), 0, NULL}; printf("FLOAT_LIT %.7f\n", $<f_var>1); }
+    | FLOAT_LIT { $$ = (Object){OBJECT_TYPE_FLOAT, false, (*(uint64_t*)&$<f_var>1), 0, NULL}; printf("FLOAT_LIT %.6f\n", $<f_var>1); }
     | DOUBLE_LIT { $$ = (Object){OBJECT_TYPE_DOUBLE, false, (*(uint64_t*)&$<d_var>1), 0, NULL}; printf("DOUBLE_LIT %lf\n", $<d_var>1); }
     | INT_LIT { $$ = (Object){OBJECT_TYPE_INT, false, (*(uint64_t*)&$<i_var>1), 0, NULL}; printf("INT_LIT %d\n", $<i_var>1); }
     | STR_LIT { $$ = (Object){OBJECT_TYPE_STR, false, (*(uint64_t*)&$<s_var>1), 0, NULL}; printf("STR_LIT \"%s\"\n", $<s_var>1); }
     | CHAR_LIT { $$ = (Object){OBJECT_TYPE_CHAR, false, (*(uint64_t*)&$<c_var>1), 0, NULL}; printf("CHAR_LIT '%c'\n", $<c_var>1); }
-    | /*Array*/ { functionArgNew(); } '{' FunctionArgumentStmtList '}' { arrayCreate(&$$); }
+    | /*Array*/ { functionArgsBegin(); } '{' FunctionArgumentStmtList '}' { if(arrayCreate(&$$)) yyerrorf("Failed to create array %s", "\n"); }
     | IdentStmt
 ;
 
@@ -269,16 +276,16 @@ IdentStmt
         if(!o) yyerrorf("variable '%s' not declared\n", $<s_var>1);
         $$ = *o;
     }
-    | IDENT VariableArraySubscriptStmtList {
+    | IDENT ArraySubscriptStmtList {
         Object* o = findVariable($<s_var>1);
         if(!o) yyerrorf("variable '%s' not declared\n", $<s_var>1);
-        if(objectArrayGet(o, NULL, &$$)) YYABORT; 
+        if(objectArrayGet(o, $<array_subscript>2, &$$)) yyerrorf("variable array '%s' failed to read\n", $<s_var>1); 
     }
 ;
 
-VariableArraySubscriptStmtList
-    : VariableArraySubscriptStmtList '[' Expression ']'
-    | '[' Expression ']'
+ArraySubscriptStmtList
+    : ArraySubscriptStmtList '[' Expression ']' { arraySubscriptPush($$ = $<array_subscript>1, &$<obj_val>3); }
+    | '[' Expression ']' { $$ = arraySubscriptBegin(&$<obj_val>2); }
 ;
 
 %%
