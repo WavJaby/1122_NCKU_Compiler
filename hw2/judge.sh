@@ -93,34 +93,36 @@ get_score() {
 run_test() {
     local subtask="$1"
     local testcase="$2"
+    local cache_file="$result_dir/../build/Main.j"
+    local asm_output_file="$result_dir/$subtask/$testcase.j"
     local output_file="$result_dir/$subtask/$testcase.out"
     local answer_file="$answer_dir/$subtask/$testcase.out"
 
     # Compile the testcase
-    make compile_asm run IN = "$input_dir/$subtask/$testcase.cpp"
-    # $compiler "$input_dir/$subtask/$testcase.cpp" > "$output_file"
-    # $compiler "$input_dir/$subtask/$testcase.cpp"
+    make compile_asm IN="$input_dir/$subtask/$testcase.cpp" > /dev/null
+    # cp $cache_file $asm_output_file
+    make run_nomsg > $output_file
 
     if [ $? -eq 0 ]; then
-        # if [ ! -f "$answer_file" ]; then
-        #     # Check if answer exist
-        #     echo -e "🫠$YELLOW $subtask/$testcase Answer not ready yet$RESET"
-        # elif [ ! -f "$output_file" ]; then
-        #     # Check if expected output file exists
-        #     echo -e "❌$RED $subtask/$testcase No expected output file found$RESET"
-        # elif [ "$run_only" = false ]; then
-        #     # Compare the output with expected output
-        #     diff --color -u --strip-trailing-cr "$answer_file" "$output_file"
-        #     if [ $? -eq 0 ]; then
-        #         echo -e "✅$GREEN $testcase output matches expected$RESET"
-        #         return 0
-        #     else
-        #         echo -e "❌$RED '$subtask/$testcase' output does not match expected$RESET"
-        #         if [ "$show_diff" = true ]; then
-        #             echo "$diff_output"
-        #         fi
-        #     fi
-        # fi
+        if [ ! -f "$answer_file" ]; then
+            # Check if answer exist
+            echo -e "🫠$YELLOW $subtask/$testcase Answer not ready yet$RESET"
+        elif [ ! -f "$output_file" ]; then
+            # Check if expected output file exists
+            echo -e "❌$RED $subtask/$testcase No expected output file found$RESET"
+        elif [ "$run_only" = false ]; then
+            # Compare the output with expected output
+            diff --color -u --strip-trailing-cr "$answer_file" "$output_file"
+            if [ $? -eq 0 ]; then
+                echo -e "✅$GREEN $testcase output matches expected$RESET"
+                return 0
+            else
+                echo -e "❌$RED '$subtask/$testcase' output does not match expected$RESET"
+                if [ "$show_diff" = true ]; then
+                    echo "$diff_output"
+                fi
+            fi
+        fi
 
         if [ "$run_only" = true ]; then
             cat "$output_file"

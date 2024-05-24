@@ -634,22 +634,23 @@ bool objectNegExpression(Object* a, Object* out) {
     return false;
 }
 
+// !a
 bool objectNotBooleanExpression(Object* a, Object* out) {
-    printf("NOT\n");
-    if (a->type != OBJECT_TYPE_BOOL)
-        return true;
+    expressionBasicCheck1(a) return true;
+    precalculateExpressionCheck1(a) return valueOperationBooleanNot(a, out);
 
-    out->type = OBJECT_TYPE_BOOL;
-    out->value = !a->value;
-    return false;
+    printf("NOT\n");
+    return true;
 }
 
 // (int) a
 bool objectCast(ObjectType variableType, Object* a, Object* out) {
     printf("Cast to %s\n", objectTypeName[variableType]);
     out->type = variableType;
+    out->array = 0;
     out->flag = VAR_FLAG_IN_STACK;
     out->symbol = a->symbol;
+
     loadIfNotInStack(a, return true);
 
     if (a->type == OBJECT_TYPE_BOOL || a->type == OBJECT_TYPE_STR ||

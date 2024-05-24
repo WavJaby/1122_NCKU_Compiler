@@ -234,10 +234,10 @@ Expression
 ;
 
 ExpressionValue
-    : BNT ExpressionValue { if(objectNotBinaryExpression(&$<obj_val>2, &$$)) YYABORT; }
-    | NOT ExpressionValue { if(objectNotBooleanExpression(&$<obj_val>2, &$$)) YYABORT; }
-    | SUB ExpressionValue { if(objectNegExpression(&$<obj_val>2, &$$)) YYABORT; }
-    | '(' VARIABLE_T ')' Expression { if(objectCast($<var_type>2, &$<obj_val>4, &$$)) YYABORT; }
+    : BNT ExpressionValue { if(objectNotBinaryExpression(&$<obj_val>2, &$$)) yyerrorf("can't BNT\n"); }
+    | NOT ExpressionValue { if(objectNotBooleanExpression(&$<obj_val>2, &$$)) yyerrorf("can't NOT\n"); }
+    | SUB ExpressionValue { if(objectNegExpression(&$<obj_val>2, &$$)) yyerrorf("can't NEG\n"); }
+    | '(' VARIABLE_T ')' Expression { if(objectCast($<var_type>2, &$<obj_val>4, &$$)) yyerrorf("can't cast\n"); }
     | '(' Expression ')' { $$ = $<obj_val>2; }
     | FunctionCallStmt
     | ValueStmt

@@ -466,7 +466,7 @@ bool valueOperationBinaryNot(Object* a, Object* out) {
     out->flag = 0;
     out->type = a->type;
     out->array = 0;
-    
+
     int8_t b_val;
     int16_t s_val;
     int32_t i_val;
@@ -497,5 +497,16 @@ bool valueOperationBinaryNot(Object* a, Object* out) {
     default:
         return true;
     }
+    return false;
+}
+
+bool valueOperationBooleanNot(Object* a, Object* out) {
+    out->type = OBJECT_TYPE_BOOL;
+    out->flag = 0;
+    out->type = a->type;
+    out->array = 0;
+    
+    out->value = !a->value;
+
     return false;
 }
