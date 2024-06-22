@@ -1,8 +1,8 @@
 #!/bin/bash
-input_dir="/home/share/hw2/input"
-result_dir="/home/$USER/2024-Spring-NCKU-CompilerHW2/result"
-answer_dir="/home/share/hw2/answer"
-compiler="/home/$USER/2024-Spring-NCKU-CompilerHW2/build/out/compiler"
+input_dir="/home/share/hw3/input"
+result_dir="/home/$USER/2024-Spring-NCKU-CompilerHW3/result"
+answer_dir="/home/share/hw3/answer"
+compiler="/home/$USER/2024-Spring-NCKU-CompilerHW3/build/out/compiler"
 
 RED="\033[0;31m"
 YELLOW="\033[0;33m"
@@ -87,6 +87,7 @@ get_score() {
         subtask12-loop2) return 10 ;;
         subtask13-2Darray) return 8 ;;
         subtask14-forall) return 14 ;;
+        subtask15-bonus) return 5 ;;
     esac
 }
 

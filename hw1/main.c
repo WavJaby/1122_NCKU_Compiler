@@ -76,10 +76,10 @@ void dumpScope() {
     printf("Index     Name                Type      Addr      Lineno    Func_sig  \n");
     Map* scope = (Map*)scopeListStack.last->value;
     Object** sorted = (Object**)malloc(sizeof(Object*) * scope->size);
-    map_entries(scope, i, {
+    map_entries(scope, i) {
         Object* obj = (Object*)i->value;
         sorted[obj->symbol->index] = obj;
-    });
+    }
     for (size_t i = 0; i < scope->size; i++) {
         Object* obj = (Object*)sorted[i];
         SymbolData* symbolData = obj->symbol;

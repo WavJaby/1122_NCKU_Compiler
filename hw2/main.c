@@ -53,17 +53,17 @@
 #define ldc(val) code("ldc %d", getChar(val))
 #define lds(val) code("ldc %d", getShort(val))
 #define ldi(val) code("ldc %d", getInt(val))
-#define ldl(val) code("ldc_w %" PRId64, getLong(val))
+#define ldl(val) code("ldc2_w %" PRId64, getLong(val))
 #define ldf(val) code("ldc %.6f", getFloat(val))
-#define ldd(val) code("ldc_w %lf", getDouble(val))
+#define ldd(val) (val->type == OBJECT_TYPE_FLOAT) ? code("ldc2_w %.6f", getFloat(val)) : code("ldc2_w %.15f", getDouble(val))
 #define ldt(val) code("ldc \"%s\"", getString(val))
 
 #define booleanResultOpFmt " BT%d ;==========\niconst_0\ngoto BE%d\nBT%d:\niconst_1\nBE%d: ;##########\n"
 #define booleanResultOp booleanOpLabelCount, booleanOpLabelCount, booleanOpLabelCount, booleanOpLabelCount
 
-#define loadIfNotInStack(val, failed)                                              \
+#define loadIfNotInStackT(targetType, val, failed)                                 \
     if (!val->flag & VAR_FLAG_IN_STACK)                                            \
-        switch (val->type) {                                                       \
+        switch (targetType) {                                                      \
             caseL(OBJECT_TYPE_SHORT, if (val->symbol) iload(val); else lds(val));  \
             caseL(OBJECT_TYPE_INT, if (val->symbol) iload(val); else ldi(val));    \
             caseL(OBJECT_TYPE_LONG, if (val->symbol) lload(val); else ldl(val));   \
@@ -79,6 +79,8 @@
         default:                                                                   \
             failed;                                                                \
         }
+
+#define loadIfNotInStack(val, failed) loadIfNotInStackT((val)->type, val, failed)
 
 #define storeTo(var, failed)                    \
     switch (var->type) {                        \
@@ -97,23 +99,6 @@
         failed;                                 \
     }
 
-#define asmOperationRaw(type, int, long, float, double, string, failed) \
-    switch (type) {                                                     \
-        caseL(OBJECT_TYPE_LONG, codeRaw(long));                         \
-        caseL(OBJECT_TYPE_FLOAT, codeRaw(float));                       \
-        caseL(OBJECT_TYPE_DOUBLE, codeRaw(double));                     \
-        caseL(OBJECT_TYPE_STR, codeRaw(string));                        \
-    case OBJECT_TYPE_BOOL:                                              \
-    case OBJECT_TYPE_BYTE:                                              \
-    case OBJECT_TYPE_CHAR:                                              \
-    case OBJECT_TYPE_SHORT:                                             \
-    case OBJECT_TYPE_INT:                                               \
-        codeRaw(int);                                                   \
-        break;                                                          \
-    default:                                                            \
-        failed;                                                         \
-    }
-
 #define asmOperation(type, int, long, float, double, string, failed) \
     switch (type) {                                                  \
         caseL(OBJECT_TYPE_LONG, long);                               \
@@ -130,6 +115,9 @@
     default:                                                         \
         failed;                                                      \
     }
+
+#define asmOperationRaw(type, int, long, float, double, string, failed) \
+    asmOperation(type, codeRaw(int), codeRaw(long), codeRaw(float), codeRaw(double), codeRaw(string), failed)
 
 Object valueOne = {OBJECT_TYPE_INT, false, 1, 0, NULL};
 const char* objectTypeName[] = {
@@ -190,7 +178,11 @@ bool compileError;
 
 int scopeLevel = 0;
 
-Map staticVar;                                          // Map<char*, Object*>
+// Map<char*, Object*>
+Map staticVar = map_create(strEquals,
+                           (uint32_t(*)(void*))strHash,
+                           objectFree,
+                           WJCL_HASH_MAP_FREE_VALUE /*Key(variable name) free in objectFree*/);
 LinkedList scopeListStack = linkedList_create();        // LinkedList<Map<char*, Object*>*>
 LinkedList scopeReturnStack = linkedList_create();      // LinkedList<Object*>
 LinkedList funcParm = linkedList_create();              // LinkedList<Object*>
@@ -219,10 +211,10 @@ void dumpScope() {
     printf("Index     Name                Type      Addr      Lineno    Func_sig  \n");
     Map* scope = (Map*)scopeListStack.last->value;
     Object** sorted = (Object**)malloc(sizeof(Object*) * scope->size);
-    map_entries(scope, i, {
+    map_entries(scope, i) {
         Object* obj = (Object*)i->value;
         sorted[obj->symbol->index] = obj;
-    });
+    }
     for (size_t i = 0; i < scope->size; i++) {
         Object* obj = (Object*)sorted[i];
         SymbolData* symbolData = obj->symbol;
@@ -294,6 +286,16 @@ bool initVariable(ObjectType variableType, LinkedList* arraySubscripts, char* va
     return false;
 }
 
+bool autoCastValue(ObjectType destType, Object* val) {
+    if (val->type != destType) {
+        if (val->type == OBJECT_TYPE_BOOL || val->type == OBJECT_TYPE_STR ||
+            destType == OBJECT_TYPE_BOOL || destType == OBJECT_TYPE_STR)
+            return true;
+        code("%c2%c", lower(*objectJavaTypeName[val->type]), lower(*objectJavaTypeName[destType]));
+    }
+    return false;
+}
+
 Object* createVariable(ObjectType variableType, LinkedList* arraySubscripts, char* variableName, Object* value) {
     int index = ((Map*)scopeListStack.last->value)->size;
     if (variableType == OBJECT_TYPE_AUTO && value)
@@ -303,6 +305,9 @@ Object* createVariable(ObjectType variableType, LinkedList* arraySubscripts, cha
     int* localAddress = functionLocalsStack.last->value;
     Object* obj = newObject(variableType, arrayDim, 0,
                             newSymbol(variableName, index, (*localAddress)++, yylineno, NULL));
+    // Double type size is 2 byte
+    if (variableType == OBJECT_TYPE_LONG || variableType == OBJECT_TYPE_DOUBLE)
+        (*localAddress)++;
     arraySubscriptEnd(arraySubscripts);
 
     map_putpp(scopeListStack.last->value, (void*)variableName, obj);
@@ -325,7 +330,7 @@ Object* createVariable(ObjectType variableType, LinkedList* arraySubscripts, cha
             arraySubscriptEnd(value->arraySubscript);
         } else
             // Store value
-            loadIfNotInStack(value, return NULL);
+            loadIfNotInStackT(variableType, value, return NULL);
         storeTo(obj, return NULL);
     }
 
@@ -433,8 +438,8 @@ void functionCall(char* funcName, Object* out) {
 
     printf("call: %s%s\n", funcName, symbol->func_sig);
     out->type = funcObj->type;
-    out->array = 0;
     out->flag = VAR_FLAG_IN_STACK;
+    out->array = 0;
     out->symbol = NULL;
 
     // Load args
@@ -456,12 +461,14 @@ bool objectExpression(char op, Object* a, Object* b, Object* out) {
     typeComparison(a, b, out);
 
     out->flag = VAR_FLAG_IN_STACK;
+    out->array = 0;
     out->symbol = NULL;
 
     loadIfNotInStack(a, return true);
     loadIfNotInStack(b, return true);
     // b load before a
-    if (b->flag & VAR_FLAG_IN_STACK && !(a->flag & VAR_FLAG_IN_STACK))
+    if (b->flag & VAR_FLAG_IN_STACK && !(a->flag & VAR_FLAG_IN_STACK) && 
+        (op == '-' || op == '/' || op == '%' ))
         codeRaw("swap");
 
     switch (op) {
@@ -500,6 +507,7 @@ bool objectExpBinary(char op, Object* a, Object* b, Object* out) {
     typeComparison(a, b, out);
 
     out->flag = VAR_FLAG_IN_STACK;
+    out->array = 0;
     out->symbol = NULL;
 
     loadIfNotInStack(a, return true);
@@ -558,6 +566,7 @@ bool objectExpBoolean(char op, Object* a, Object* b, Object* out) {
 
     out->type = OBJECT_TYPE_BOOL;
     out->flag = VAR_FLAG_IN_STACK;
+    out->array = 0;
     out->symbol = NULL;
 
     switch (op) {
@@ -611,6 +620,7 @@ bool objectNotBinaryExpression(Object* a, Object* out) {
     printf("BNT\n");
     out->type = a->type;
     out->flag = VAR_FLAG_IN_STACK;
+    out->array = 0;
     out->symbol = NULL;
     return true;
 
@@ -626,6 +636,7 @@ bool objectNegExpression(Object* a, Object* out) {
 
     out->type = a->type;
     out->flag = VAR_FLAG_IN_STACK;
+    out->array = 0;
     out->symbol = NULL;
 
     loadIfNotInStack(a, return true);
@@ -647,16 +658,14 @@ bool objectNotBooleanExpression(Object* a, Object* out) {
 bool objectCast(ObjectType variableType, Object* a, Object* out) {
     printf("Cast to %s\n", objectTypeName[variableType]);
     out->type = variableType;
-    out->array = 0;
     out->flag = VAR_FLAG_IN_STACK;
+    out->array = 0;
     out->symbol = a->symbol;
 
     loadIfNotInStack(a, return true);
 
-    if (a->type == OBJECT_TYPE_BOOL || a->type == OBJECT_TYPE_STR ||
-        variableType == OBJECT_TYPE_BOOL || variableType == OBJECT_TYPE_STR)
+    if (autoCastValue(variableType, a))
         return true;
-    code("%c2%c", lower(*objectJavaTypeName[a->type]), lower(*objectJavaTypeName[variableType]));
     return false;
 }
 
@@ -737,12 +746,9 @@ bool objectExpAssign(char op, Object* dest, Object* val, Object* out) {
 bool objectValueAssign(Object* dest, Object* val, Object* out) {
     printf("VAL_ASSIGN\n");
 
-    if (val->type != dest->type) {
-        if (val->type == OBJECT_TYPE_BOOL || val->type == OBJECT_TYPE_STR ||
-            dest->type == OBJECT_TYPE_BOOL || dest->type == OBJECT_TYPE_STR)
-            return true;
-        code("%c2%c", lower(*objectJavaTypeName[val->type]), lower(*objectJavaTypeName[dest->type]));
-    }
+    // Auto cast value
+    if (autoCastValue(dest->type, val))
+        return true;
 
     out->type = dest->type;
     out->symbol = NULL;
@@ -787,6 +793,7 @@ bool objectIncAssign(Object* a, Object* out) {
     // loadIfNotInStack(a, return true);
     out->type = a->type;
     out->flag = VAR_FLAG_IN_STACK;
+    out->array = 0;
     out->symbol = NULL;
 
     asmOperation(a->type,
@@ -808,6 +815,7 @@ bool objectDecAssign(Object* a, Object* out) {
     // loadIfNotInStack(a, return true);
     out->type = a->type;
     out->flag = VAR_FLAG_IN_STACK;
+    out->array = 0;
     out->symbol = NULL;
 
     asmOperation(a->type,
@@ -1022,6 +1030,7 @@ bool returnObject(Object* obj) {
         return false;
     }
 
+    loadIfNotInStack(obj, return true);
     // Set return object;
     scopeReturnStack.last->value = obj;
     asmOperationRaw(type, "ireturn", "lreturn", "freturn", "dreturn", "areturn", return true);
@@ -1063,8 +1072,8 @@ bool arrayCreate(Object* out) {
         codeRaw("iastore");
     });
     out->type = type;
-    out->array = 1;
     out->flag = VAR_FLAG_IN_STACK;
+    out->array = 1;
     out->symbol = NULL;
 
     linkedList_free(funcArgStack.last->value);
@@ -1132,10 +1141,10 @@ int main(int argc, char* argv[]) {
     }
 
     // Start parsing
-    staticVar = (Map)map_create(objectInfo);
     Object endl = {OBJECT_TYPE_STR, false, 0, 0, &(SymbolData){"endl", 0, -1}};
     map_putpp(&staticVar, "endl", &endl);
 
+    codeRaw(".source Main.j");
     codeRaw(".class public Main");
     codeRaw(".super java/lang/Object");
     scopeLevel = -1;

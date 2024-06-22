@@ -40,7 +40,7 @@ void objectFree(void* key, void* value) {
     }
 }
 
-const NodeInfo objectInfo = {
+const MapNodeInfo objectInfo = {
     .equalsFunction = strEquals,
     .hashFunction = (uint32_t(*)(void*))strHash,
     .freeFlag = WJCL_HASH_MAP_FREE_VALUE,  // Key(variable name) free in objectFree

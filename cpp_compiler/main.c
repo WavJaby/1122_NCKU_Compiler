@@ -21,10 +21,10 @@ bool constantObjectEquals(void* a, void* b) {
     if (objA->type != objA->type)
         return false;
     switch (objA->type) {
-        case OBJECT_TYPE_STR:
-            return strcmp((const char*)objA->value, (const char*)objA->value) == 0;
-        default:
-            return objA->value == objB->value;
+    case OBJECT_TYPE_STR:
+        return strcmp((const char*)objA->value, (const char*)objA->value) == 0;
+    default:
+        return objA->value == objB->value;
     }
 }
 uint32_t constantObjectHash(void* key) {
@@ -41,13 +41,10 @@ void constantObjectFree(void* key, void* value) {
         free((char*)obj->value);
 }
 
-NodeInfo constantObjectInfo = {
-    .equalsFunction = constantObjectEquals,
-    .hashFunction = constantObjectHash,
-    .freeFlag = WJCL_HASH_MAP_FREE_KEY | WJCL_HASH_MAP_FREE_VALUE,
-    .onNodeDelete = constantObjectFree,
-};
-Map constantObjectMap;
+Map constantObjectMap = map_create(constantObjectEquals,
+                                   constantObjectHash,
+                                   constantObjectFree,
+                                   WJCL_HASH_MAP_FREE_KEY | WJCL_HASH_MAP_FREE_VALUE);
 
 void createMethod(ObjectType returnType, const char* name) {
     uint16_t accessFlags = ACC_PUBLIC | ACC_STATIC;
@@ -145,16 +142,15 @@ int main(int argc, char* argv[]) {
     java_ref printlnIntegerRef = addMethodref(printStreamRef, addNameAndType("println", "(I)V", &constantByteBuff), &constantByteBuff);
 
     yylineno = 1;
-    constantObjectMap = map_create(constantObjectInfo);
     yyparse();
     fclose(yyin);
     printf("Total lines: %d\n", yylineno);
 
     printf("\n");
     printf("constantUtf8Map: %lu\n", constantObjectMap.size);
-    map_entries(&constantObjectMap, i, {
+    map_entries(&constantObjectMap, i) {
         printf("%s %d\n", (char*)i->key, *(int*)i->value);
-    });
+    }
     map_free(&constantObjectMap);
     printf("\n");
 
